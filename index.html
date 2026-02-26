@@ -4,7 +4,321 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Academic Job Board — Neuroscience &amp; Anatomy (Canada)</title>
-  <link rel="stylesheet" href="styles.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ── Theme variables ───────────────────────────────────────────────────── */
+    :root {
+      --bg:          #fdf6ee;
+      --bg-card:     #ffffff;
+      --bg-thead:    #f5ebe0;
+      --bg-hover:    #fdf0e5;
+      --bg-pill:     #fff3e8;
+      --bg-config:   #ffffff;
+      --border:      #f0e0d0;
+      --border-pill: #f5d5b8;
+      --border-row:  #f0e8df;
+      --text:        #333333;
+      --text-muted:  #777777;
+      --text-sub:    #aaaaaa;
+      --text-label:  #999999;
+      --text-sep:    #dddddd;
+      --text-th:     #666666;
+      --accent:      #c0550a;
+      --accent-blue: #2563eb;
+      --accent-green:#2e8b57;
+      --shadow:      rgba(0,0,0,.07);
+      --badge-alert-bg:  #fde8d0;
+      --badge-quiet-bg:  #e8f5ee;
+      --badge-zero-bg:   #eeeeee;
+      --badge-zero-text: #999999;
+      --section-border:  #f0e0d0;
+      --dl-warn: #92650a;
+      --dl-red:  #b91c1c;
+    }
+    [data-theme="dark"] {
+      --bg:          #1a1a1a;
+      --bg-card:     #252525;
+      --bg-thead:    #2e2e2e;
+      --bg-hover:    #2a2a2a;
+      --bg-pill:     #2e2218;
+      --bg-config:   #252525;
+      --border:      #3a3a3a;
+      --border-pill: #4a3020;
+      --border-row:  #333333;
+      --text:        #e0e0e0;
+      --text-muted:  #aaaaaa;
+      --text-sub:    #888888;
+      --text-label:  #888888;
+      --text-sep:    #444444;
+      --text-th:     #aaaaaa;
+      --accent:      #e07b39;
+      --accent-blue: #4a90d9;
+      --accent-green:#3aad6e;
+      --shadow:      rgba(0,0,0,.3);
+      --badge-alert-bg:  #3d2010;
+      --badge-quiet-bg:  #0e2a1a;
+      --badge-zero-bg:   #2a2a2a;
+      --badge-zero-text: #888888;
+      --section-border:  #3a3a3a;
+      --dl-warn: #d29922;
+      --dl-red:  #f85149;
+    }
+
+    /* ── Base ──────────────────────────────────────────────────────────────── */
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 2rem 1rem;
+      transition: background .2s, color .2s;
+    }
+    a { color: var(--accent); }
+
+    /* ── Header ────────────────────────────────────────────────────────────── */
+    header {
+      text-align: center;
+      margin-bottom: 1.5rem;
+      position: relative;
+    }
+    header h1 { font-size: 2rem; color: var(--accent); }
+    header p  { color: var(--text-muted); margin-top: .3rem; font-size: .95rem; }
+
+    /* ── Dark-mode toggle ──────────────────────────────────────────────────── */
+    #theme-toggle {
+      position: absolute;
+      top: 0; right: 0;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: .4rem .75rem;
+      font-size: .85rem;
+      cursor: pointer;
+      color: var(--text);
+      transition: background .2s, border-color .2s;
+    }
+    #theme-toggle:hover { border-color: var(--accent); }
+
+    /* ── Control buttons ───────────────────────────────────────────────────── */
+    .controls {
+      display: flex;
+      gap: .75rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 2rem;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: .45rem;
+      padding: .6rem 1.3rem;
+      border-radius: 10px;
+      font-size: .92rem;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      border: none;
+      transition: filter .15s, transform .1s;
+    }
+    .btn:hover  { filter: brightness(1.12); transform: translateY(-1px); text-decoration: none; }
+    .btn:active { transform: translateY(0); filter: brightness(.95); }
+    .btn-run  { background: var(--accent-blue); color: #fff; }
+    .btn-ua   { background: var(--accent);      color: #fff; }
+
+    /* ── Summary cards ─────────────────────────────────────────────────────── */
+    .cards {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 2rem;
+    }
+    .card {
+      background: var(--bg-card);
+      border-radius: 12px;
+      box-shadow: 0 2px 8px var(--shadow);
+      padding: 1.25rem 1.75rem;
+      min-width: 165px;
+      text-align: center;
+      transition: background .2s;
+    }
+    .card .label { font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; color: var(--text-label); }
+    .card .value { font-size: 1.6rem; font-weight: 700; color: var(--accent); margin-top: .2rem; }
+    .card .sub   { font-size: .8rem; color: var(--text-sub); margin-top: .15rem; }
+    .card.green .value { color: var(--accent-green); }
+    .card.blue  .value { color: var(--accent-blue); }
+
+    /* ── Filter strip ──────────────────────────────────────────────────────── */
+    .filter-strip {
+      background: var(--bg-config);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: .65rem 1.1rem;
+      margin-bottom: 1.5rem;
+      font-size: .88rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: .5rem;
+      transition: background .2s;
+    }
+    .filter-label { color: var(--text-label); font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; }
+    .filter-strip select,
+    .filter-strip input {
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: .28rem .5rem;
+      font-size: .82rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color .15s;
+    }
+    .filter-strip select:focus,
+    .filter-strip input:focus { border-color: var(--accent); }
+    .filter-strip input { flex: 1; min-width: 150px; }
+    .filter-sep { color: var(--text-sep); }
+
+    /* ── Section title ─────────────────────────────────────────────────────── */
+    .section-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: .75rem;
+      border-bottom: 2px solid var(--section-border);
+      padding-bottom: .4rem;
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+    }
+    .province-count {
+      font-size: .75rem;
+      font-weight: 400;
+      background: var(--bg-pill);
+      border: 1px solid var(--border-pill);
+      border-radius: 20px;
+      padding: .1rem .5rem;
+      color: var(--text-muted);
+    }
+
+    /* ── Table ─────────────────────────────────────────────────────────────── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--bg-card);
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px var(--shadow);
+      font-size: .9rem;
+      transition: background .2s;
+    }
+    thead th {
+      background: var(--bg-thead);
+      color: var(--text-th);
+      font-weight: 600;
+      padding: .7rem 1rem;
+      text-align: left;
+      font-size: .78rem;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    tbody tr { border-top: 1px solid var(--border-row); }
+    tbody tr:hover { background: var(--bg-hover); }
+    tbody td { padding: .65rem 1rem; vertical-align: top; }
+
+    /* ── Badges ────────────────────────────────────────────────────────────── */
+    .badge {
+      display: inline-block;
+      padding: .2rem .55rem;
+      border-radius: 999px;
+      font-size: .75rem;
+      font-weight: 600;
+    }
+    .badge-alert { background: var(--badge-alert-bg); color: var(--accent); }
+    .badge-quiet { background: var(--badge-quiet-bg); color: var(--accent-green); }
+    .badge-zero  { background: var(--badge-zero-bg);  color: var(--badge-zero-text); }
+
+    /* ── Deadline colours (inline spans) ───────────────────────────────────── */
+    .dl-warn { color: var(--dl-warn); font-weight: 600; }
+    .dl-red  { color: var(--dl-red);  font-weight: 700; }
+    .dl-ok   { color: var(--text-muted); }
+    .dl-none { color: var(--text-sub); }
+
+    /* ── Job title link ────────────────────────────────────────────────────── */
+    .job-link { color: var(--text); text-decoration: none; font-weight: 500; }
+    .job-link:hover { color: var(--accent); }
+    .job-inst { font-size: .82rem; color: var(--text-sub); margin-top: .2rem; }
+    .job-src  { font-size: .74rem; color: var(--text-sub); margin-top: .1rem; font-style: italic; }
+
+    /* ── Apply button ──────────────────────────────────────────────────────── */
+    .btn-apply {
+      display: inline-block;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 6px;
+      padding: .28rem .7rem;
+      font-size: .78rem;
+      font-weight: 600;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: filter .15s;
+    }
+    .btn-apply:hover { filter: brightness(1.15); text-decoration: none; color: #fff; }
+
+    /* ── Expand other provinces ────────────────────────────────────────────── */
+    .expand-wrap { text-align: center; margin: 1rem 0 1.5rem; }
+    .btn-expand {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      border-radius: 8px;
+      padding: .5rem 1.4rem;
+      font-size: .85rem;
+      font-family: inherit;
+      cursor: pointer;
+      transition: border-color .15s, color .15s;
+    }
+    .btn-expand:hover { border-color: var(--accent); color: var(--accent); }
+    .other-provinces { display: none; }
+    .other-provinces.visible { display: block; }
+
+    /* ── Province section ──────────────────────────────────────────────────── */
+    .table-wrapper { margin-bottom: 2rem; }
+
+    /* ── Empty / error ─────────────────────────────────────────────────────── */
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      color: var(--text-sub);
+      font-size: .95rem;
+    }
+
+    /* ── Misc ──────────────────────────────────────────────────────────────── */
+    .wrapper { max-width: 960px; margin: 0 auto; }
+
+    #status-bar {
+      text-align: center;
+      font-size: .8rem;
+      color: var(--text-sub);
+      margin-top: 2rem;
+    }
+    #status-bar code {
+      background: var(--bg-card);
+      padding: .1rem .35rem;
+      border-radius: 4px;
+      font-size: .78rem;
+    }
+
+    /* ── Responsive ────────────────────────────────────────────────────────── */
+    @media (max-width: 640px) {
+      body { padding: 1.25rem .75rem; }
+      header h1 { font-size: 1.5rem; }
+      #theme-toggle { position: static; display: block; margin: .75rem auto 0; }
+      .hide-mobile { display: none; }
+    }
+  </style>
 </head>
 <body>
 <div class="wrapper">
@@ -13,10 +327,10 @@
   <header>
     <h1>🎓 Academic Job Board</h1>
     <p>Neuroscience · Anatomy · Kinesiology · Neuroanatomy — Canada</p>
-    <button id="theme-toggle" onclick="toggleTheme()" title="Toggle light/dark mode">☀️ Light</button>
+    <button id="theme-toggle" onclick="toggleTheme()" title="Toggle dark/light mode">☀️ Light</button>
   </header>
 
-  <!-- ── Control buttons ────────────────────────────────────────────────── -->
+  <!-- ── Controls ───────────────────────────────────────────────────────── -->
   <div class="controls">
     <a class="btn btn-run"
        href="https://github.com/Vashtag/Job/actions/workflows/scrape.yml"
@@ -37,7 +351,7 @@
     <div class="card">
       <div class="label">Last Updated</div>
       <div class="value" id="val-updated">—</div>
-      <div class="sub" id="sub-updated">never</div>
+      <div class="sub"  id="sub-updated">never</div>
     </div>
     <div class="card blue">
       <div class="label">Total Postings</div>
@@ -49,45 +363,320 @@
       <div class="value" id="val-strong">—</div>
       <div class="sub">neuroscience / anatomy</div>
     </div>
-    <div class="card amber">
+    <div class="card">
       <div class="label">Partial Matches</div>
       <div class="value" id="val-partial">—</div>
       <div class="sub">physiology / stats</div>
     </div>
-    <div class="card grey" id="card-sources">
-      <div class="label">Sources Checked</div>
+    <div class="card">
+      <div class="label">Sources Hit</div>
       <div class="value" id="val-sources">—</div>
       <div class="sub" id="sub-sources">universities + UA</div>
     </div>
   </div>
 
-  <!-- ── Filter bar ──────────────────────────────────────────────────────── -->
-  <div class="filter-bar">
+  <!-- ── Filter strip ───────────────────────────────────────────────────── -->
+  <div class="filter-strip">
     <span class="filter-label">Filter:</span>
     <select id="filter-match">
       <option value="all">All matches</option>
       <option value="strong">Strong only</option>
       <option value="strong,partial">Strong &amp; Partial</option>
     </select>
+    <span class="filter-sep">·</span>
     <select id="filter-source">
       <option value="all">All sources</option>
     </select>
+    <span class="filter-sep">·</span>
     <input id="filter-search" type="text" placeholder="Search title / institution…" autocomplete="off" />
   </div>
 
   <!-- ── Job listings ────────────────────────────────────────────────────── -->
-  <div id="app">
+  <div id="app-container">
     <div class="empty-state">Loading job listings…</div>
   </div>
 
-  <!-- ── Status bar ──────────────────────────────────────────────────────── -->
+  <!-- ── Status bar ─────────────────────────────────────────────────────── -->
   <div id="status-bar">
     Auto-refreshes every 60 s &nbsp;·&nbsp; Data from <code>jobs.json</code> &nbsp;·&nbsp;
-    Source: <a href="https://www.universityaffairs.ca/search-jobs/" target="_blank">University Affairs</a>
-    + individual university career pages
+    Sources: <a href="https://www.universityaffairs.ca/search-jobs/" target="_blank">University Affairs</a>
+    + 30 university career portals
   </div>
 
 </div>
-<script src="app.js"></script>
+
+<script>
+  /* ── Config ──────────────────────────────────────────────────────────── */
+  const PRIORITY_PROVINCES = ['Ontario', 'British Columbia'];
+  const PROVINCE_ORDER = [
+    'Ontario','British Columbia','Alberta','Quebec','Manitoba','Saskatchewan',
+    'Nova Scotia','New Brunswick','Newfoundland and Labrador',
+    'Prince Edward Island','Northwest Territories','Yukon','Nunavut','Unknown',
+  ];
+
+  /* ── State ───────────────────────────────────────────────────────────── */
+  let allJobs = [];
+  let activeMatch  = 'all';
+  let activeSource = 'all';
+  let activeSearch = '';
+
+  /* ── Theme ───────────────────────────────────────────────────────────── */
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    const btn = document.getElementById('theme-toggle');
+    if (btn) btn.textContent = theme === 'dark' ? '☀️ Light' : '🌙 Dark';
+  }
+  function toggleTheme() {
+    const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    applyTheme(next);
+    localStorage.setItem('acad-job-theme', next);
+  }
+  applyTheme(localStorage.getItem('acad-job-theme') || 'dark');
+
+  /* ── Helpers ─────────────────────────────────────────────────────────── */
+  function esc(s) {
+    return String(s || '')
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function fmtRelative(iso) {
+    const diff = Math.round((Date.now() - new Date(iso)) / 1000);
+    if (diff < 90)    return diff + 's ago';
+    if (diff < 3600)  return Math.round(diff/60) + 'm ago';
+    if (diff < 86400) return Math.round(diff/3600) + 'h ago';
+    return Math.round(diff/86400) + 'd ago';
+  }
+
+  function fmtAbs(iso) {
+    return new Date(iso).toLocaleString('en-CA', {
+      timeZone: 'America/Toronto',
+      month:'short', day:'numeric', year:'numeric',
+      hour:'2-digit', minute:'2-digit',
+    }) + ' ET';
+  }
+
+  function deadlineHtml(dl) {
+    if (!dl) return '<span class="dl-none">Not listed</span>';
+    const d    = new Date(dl);
+    const days = isNaN(d) ? null : Math.ceil((d - Date.now()) / 86400000);
+    if (days === null) return '<span class="dl-ok">' + esc(dl) + '</span>';
+    if (days < 0)      return '<span class="dl-ok">Closed</span>';
+    if (days <= 14)    return '<span class="dl-red">⚡ ' + esc(dl) + '</span>';
+    if (days <= 28)    return '<span class="dl-warn">⚠ ' + esc(dl) + '</span>';
+    return '<span class="dl-ok">' + esc(dl) + '</span>';
+  }
+
+  /* ── Filtering ───────────────────────────────────────────────────────── */
+  function filterJobs(jobs) {
+    return jobs.filter(j => {
+      if (activeMatch === 'strong' && j.match !== 'strong') return false;
+      if (activeMatch === 'strong,partial' && !['strong','partial'].includes(j.match)) return false;
+      if (activeSource !== 'all' && j.source !== activeSource) return false;
+      if (activeSearch) {
+        const q   = activeSearch.toLowerCase();
+        const hay = [j.title, j.institution, j.location, j.province, j.source].join(' ').toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }
+
+  /* ── Render one job row ──────────────────────────────────────────────── */
+  function jobRow(j) {
+    const postUrl  = esc(j.url        || '#');
+    const applyUrl = esc(j.apply_url  || j.url || '#');
+    const matchBadge = j.match === 'strong'
+      ? '<span class="badge badge-alert">Strong Match</span>'
+      : j.match === 'partial'
+        ? '<span class="badge badge-quiet">Partial</span>'
+        : '';
+    return `
+      <tr>
+        <td>
+          <a class="job-link" href="${postUrl}" target="_blank" rel="noopener">${esc(j.title)}</a>
+          <div class="job-inst">${esc(j.institution || 'Institution not listed')}</div>
+          ${j.source ? '<div class="job-src">via ' + esc(j.source) + '</div>' : ''}
+        </td>
+        <td class="hide-mobile">${esc(j.location || j.province || '—')}</td>
+        <td>${deadlineHtml(j.deadline)}</td>
+        <td>${matchBadge}</td>
+        <td><a class="btn-apply" href="${applyUrl}" target="_blank" rel="noopener">Apply →</a></td>
+      </tr>`;
+  }
+
+  /* ── Render province section ─────────────────────────────────────────── */
+  function provinceSection(province, jobs) {
+    const rows = jobs.map(jobRow).join('');
+    return `
+      <div class="table-wrapper">
+        <div class="section-title">
+          ${esc(province)}
+          <span class="province-count">${jobs.length} posting${jobs.length !== 1 ? 's' : ''}</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Position / Institution</th>
+              <th class="hide-mobile">Location</th>
+              <th>Deadline</th>
+              <th>Match</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+  }
+
+  /* ── Main render ─────────────────────────────────────────────────────── */
+  function render() {
+    const filtered = filterJobs(allJobs);
+
+    // Update cards
+    document.getElementById('val-total').textContent   = filtered.length;
+    document.getElementById('val-strong').textContent  = filtered.filter(j => j.match === 'strong').length;
+    document.getElementById('val-partial').textContent = filtered.filter(j => j.match === 'partial').length;
+
+    const app = document.getElementById('app-container');
+
+    if (!filtered.length) {
+      app.innerHTML = '<div class="empty-state">No postings match your filters.<br>Try broadening the match filter or clearing the search.</div>';
+      return;
+    }
+
+    // Group by province
+    const groups = {};
+    for (const j of filtered) {
+      const p = j.province || 'Unknown';
+      (groups[p] = groups[p] || []).push(j);
+    }
+
+    const sorted = Object.keys(groups).sort((a, b) => {
+      const ai = PROVINCE_ORDER.indexOf(a), bi = PROVINCE_ORDER.indexOf(b);
+      return (ai < 0 ? 999 : ai) - (bi < 0 ? 999 : bi) || a.localeCompare(b);
+    });
+
+    let priorityHtml = '';
+    let otherHtml    = '';
+    let otherCount   = 0;
+
+    for (const p of sorted) {
+      const html = provinceSection(p, groups[p]);
+      if (PRIORITY_PROVINCES.includes(p)) {
+        priorityHtml += html;
+      } else {
+        otherHtml  += html;
+        otherCount += groups[p].length;
+      }
+    }
+
+    let out = priorityHtml;
+    if (otherHtml) {
+      out += `
+        <div class="expand-wrap">
+          <button class="btn-expand" id="btn-expand">
+            Show other provinces (${otherCount} posting${otherCount !== 1 ? 's' : ''})
+          </button>
+        </div>
+        <div class="other-provinces" id="other-provinces">${otherHtml}</div>`;
+    }
+
+    app.innerHTML = out;
+
+    const btn = document.getElementById('btn-expand');
+    const div = document.getElementById('other-provinces');
+    if (btn && div) {
+      btn.addEventListener('click', () => {
+        div.classList.toggle('visible');
+        btn.textContent = div.classList.contains('visible')
+          ? 'Hide other provinces'
+          : `Show other provinces (${otherCount} posting${otherCount !== 1 ? 's' : ''})`;
+      });
+    }
+  }
+
+  /* ── Populate source dropdown ────────────────────────────────────────── */
+  function populateSources(jobs) {
+    const sel = document.getElementById('filter-source');
+    // Remove any previously added options beyond the first
+    while (sel.options.length > 1) sel.remove(1);
+    const sources = [...new Set(jobs.map(j => j.source || 'Unknown'))].sort();
+    sources.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s;
+      opt.textContent = s;
+      sel.appendChild(opt);
+    });
+  }
+
+  /* ── Load jobs.json ──────────────────────────────────────────────────── */
+  async function load() {
+    const res = await fetch('./jobs.json?t=' + Date.now()).catch(() => null);
+
+    if (!res || !res.ok) {
+      document.getElementById('app-container').innerHTML =
+        '<div class="empty-state">Could not load jobs.json.<br>Make sure GitHub Pages is enabled and the scraper has run at least once.<br><br>'
+        + 'Go to Actions → "Refresh Job Listings" → Run workflow.</div>';
+      return;
+    }
+
+    const data = await res.json().catch(() => null);
+    if (!data) {
+      document.getElementById('app-container').innerHTML =
+        '<div class="empty-state">jobs.json is malformed. Check the scraper logs.</div>';
+      return;
+    }
+
+    // Update timestamps
+    if (data.last_updated) {
+      document.getElementById('val-updated').textContent = fmtRelative(data.last_updated);
+      document.getElementById('sub-updated').textContent = fmtAbs(data.last_updated);
+    } else {
+      document.getElementById('val-updated').textContent = '—';
+      document.getElementById('sub-updated').textContent = 'Not yet scraped';
+    }
+
+    // Sources card
+    if (data.sources_checked != null) {
+      document.getElementById('val-sources').textContent =
+        (data.sources_successful ?? '?') + ' / ' + data.sources_checked;
+      document.getElementById('sub-sources').textContent = 'returned results';
+    }
+
+    allJobs = data.jobs || [];
+
+    if (!allJobs.length) {
+      document.getElementById('val-total').textContent   = '0';
+      document.getElementById('val-strong').textContent  = '0';
+      document.getElementById('val-partial').textContent = '0';
+      document.getElementById('app-container').innerHTML =
+        '<div class="empty-state">No job postings found yet.<br>Click <strong>Run Scraper Now</strong> above, then reload after ~2 minutes.</div>';
+      return;
+    }
+
+    populateSources(allJobs);
+    render();
+  }
+
+  /* ── Filter events ───────────────────────────────────────────────────── */
+  document.getElementById('filter-match').addEventListener('change', e => {
+    activeMatch = e.target.value;
+    render();
+  });
+  document.getElementById('filter-source').addEventListener('change', e => {
+    activeSource = e.target.value;
+    render();
+  });
+  let searchTimer;
+  document.getElementById('filter-search').addEventListener('input', e => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => { activeSearch = e.target.value.trim(); render(); }, 250);
+  });
+
+  /* ── Init ────────────────────────────────────────────────────────────── */
+  load();
+  setInterval(load, 60_000);
+</script>
 </body>
 </html>
