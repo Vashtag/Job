@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Academic Job Board — Neuroscience &amp; Anatomy (Canada)</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <header>
+    <div class="header-inner">
+      <div class="header-title">
+        <h1>Academic Job Board</h1>
+        <p class="subtitle">Neuroscience · Anatomy · Kinesiology · Neuroanatomy — Canada</p>
+      </div>
+      <div class="header-meta">
+        <span id="last-updated" class="last-updated">Loading…</span>
+        <span id="job-count" class="job-count"></span>
+      </div>
+    </div>
+
+    <div class="filter-bar">
+      <div class="filter-group">
+        <label for="filter-match">Match</label>
+        <select id="filter-match">
+          <option value="all">All</option>
+          <option value="strong">Strong only</option>
+          <option value="strong,partial">Strong &amp; Partial</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label for="filter-search">Search</label>
+        <input id="filter-search" type="text" placeholder="Filter by keyword…" autocomplete="off" />
+      </div>
+    </div>
+  </header>
+
+  <main id="app">
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Fetching job listings…</p>
+    </div>
+  </main>
+
+  <footer>
+    <p>
+      Data sourced from
+      <a href="https://www.universityaffairs.ca/search-jobs/" target="_blank" rel="noopener">
+        University Affairs
+      </a>.
+      Refreshed automatically twice daily via GitHub Actions.
+      Verify all postings before applying — deadlines may change.
+    </p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
