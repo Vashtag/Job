@@ -13,6 +13,7 @@ import json
 import time
 import re
 import sys
+import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 from urllib.parse import urljoin, urlencode
 
@@ -43,6 +44,11 @@ PARTIAL_KEYWORDS = [
     "biology", "health science", "biomechanics", "motor control",
     "rehabilitation", "exercise science", "human kinetics",
     "histology", "cell biology", "molecular biology", "motor learning",
+    # Physical education / health pedagogy (e.g. UBC PE job)
+    "physical education", "health pedagogy", "health promotion",
+    "human performance", "exercise physiology", "sport science",
+    "movement science", "health education", "physical activity",
+    "health kinesiology", "applied health", "health and physical",
 ]
 
 POSITION_KEYWORDS = [
@@ -119,121 +125,65 @@ CITY_TO_PROVINCE = {
 }
 
 # ── University sources ────────────────────────────────────────────────────────
-# Each entry must have: name, province, type ("workday" | "html")
-# Workday entries need: tenant (and optionally ver)
-# HTML entries need: urls (list of fallback URLs to try)
+# type "workday"      → myworkday.com tenant API
+# type "workday_jobs" → myworkdayjobs.com career site API (confirmed from real URLs)
+# type "html"         → HTML careers page scraping
 
 UNIVERSITY_SOURCES = [
-    # ── Workday universities ──────────────────────────────────────────────────
-    # Tenant names verified from known Workday career site URLs.
-    # If a tenant resolves to 404, the scraper silently skips it.
+    # ── myworkday.com Workday portals ─────────────────────────────────────────
+    {"name": "McMaster University",          "province": "Ontario",
+     "type": "workday", "tenant": "mcmaster",        "ver": "wd5"},
+    {"name": "Western University",           "province": "Ontario",
+     "type": "workday", "tenant": "uwo",              "ver": "wd3"},
+    {"name": "University of Waterloo",       "province": "Ontario",
+     "type": "workday", "tenant": "uwaterloo",        "ver": "wd3"},
+    {"name": "Queen's University",           "province": "Ontario",
+     "type": "workday", "tenant": "queensu",          "ver": "wd5"},
+    {"name": "Carleton University",          "province": "Ontario",
+     "type": "workday", "tenant": "carleton",         "ver": "wd5"},
+    {"name": "York University",              "province": "Ontario",
+     "type": "workday", "tenant": "yorkuniversity",   "ver": "wd5"},
+    {"name": "University of Guelph",         "province": "Ontario",
+     "type": "workday", "tenant": "uguelph",          "ver": "wd5"},
+    {"name": "University of Calgary",        "province": "Alberta",
+     "type": "workday", "tenant": "ucalgary",         "ver": "wd5"},
+    {"name": "University of Alberta",        "province": "Alberta",
+     "type": "workday", "tenant": "ualberta",         "ver": "wd5"},
+    {"name": "University of Manitoba",       "province": "Manitoba",
+     "type": "workday", "tenant": "umanitoba",        "ver": "wd5"},
+    {"name": "University of Saskatchewan",   "province": "Saskatchewan",
+     "type": "workday", "tenant": "usask",            "ver": "wd5"},
+    {"name": "University of British Columbia","province": "British Columbia",
+     "type": "workday", "tenant": "ubc",              "ver": "wd10"},
+    {"name": "Simon Fraser University",      "province": "British Columbia",
+     "type": "workday", "tenant": "sfu",              "ver": "wd5"},
+    {"name": "Memorial University",          "province": "Newfoundland and Labrador",
+     "type": "workday", "tenant": "mun",              "ver": "wd5"},
+    {"name": "Dalhousie University",         "province": "Nova Scotia",
+     "type": "workday", "tenant": "dal",              "ver": "wd3"},
+
+    # ── myworkdayjobs.com career portals (confirmed from real job URLs) ────────
+    # Brock: https://brocku.wd3.myworkdayjobs.com/brocku_careers/job/...
     {
-        "name": "McMaster University",
+        "name": "Brock University",
         "province": "Ontario",
-        "type": "workday",
-        "tenant": "mcmaster",
-        "ver": "wd5",
-    },
-    {
-        "name": "Western University",
-        "province": "Ontario",
-        "type": "workday",
-        "tenant": "uwo",
+        "type": "workday_jobs",
+        "tenant": "brocku",
+        "career_site": "brocku_careers",
         "ver": "wd3",
     },
-    {
-        "name": "University of Waterloo",
-        "province": "Ontario",
-        "type": "workday",
-        "tenant": "uwaterloo",
-        "ver": "wd3",
-    },
-    {
-        "name": "Queen's University",
-        "province": "Ontario",
-        "type": "workday",
-        "tenant": "queensu",
-        "ver": "wd5",
-    },
-    {
-        "name": "Carleton University",
-        "province": "Ontario",
-        "type": "workday",
-        "tenant": "carleton",
-        "ver": "wd5",
-    },
-    {
-        "name": "York University",
-        "province": "Ontario",
-        "type": "workday",
-        "tenant": "yorkuniversity",
-        "ver": "wd5",
-    },
-    {
-        "name": "University of Guelph",
-        "province": "Ontario",
-        "type": "workday",
-        "tenant": "uguelph",
-        "ver": "wd5",
-    },
-    {
-        "name": "University of Calgary",
-        "province": "Alberta",
-        "type": "workday",
-        "tenant": "ucalgary",
-        "ver": "wd5",
-    },
-    {
-        "name": "University of Alberta",
-        "province": "Alberta",
-        "type": "workday",
-        "tenant": "ualberta",
-        "ver": "wd5",
-    },
-    {
-        "name": "University of Manitoba",
-        "province": "Manitoba",
-        "type": "workday",
-        "tenant": "umanitoba",
-        "ver": "wd5",
-    },
-    {
-        "name": "University of Saskatchewan",
-        "province": "Saskatchewan",
-        "type": "workday",
-        "tenant": "usask",
-        "ver": "wd5",
-    },
-    {
-        "name": "University of British Columbia",
-        "province": "British Columbia",
-        "type": "workday",
-        "tenant": "ubc",
-        "ver": "wd10",
-    },
-    {
-        "name": "Simon Fraser University",
-        "province": "British Columbia",
-        "type": "workday",
-        "tenant": "sfu",
-        "ver": "wd5",
-    },
-    {
-        "name": "Memorial University",
-        "province": "Newfoundland and Labrador",
-        "type": "workday",
-        "tenant": "mun",
-        "ver": "wd5",
-    },
-    {
-        "name": "Dalhousie University",
-        "province": "Nova Scotia",
-        "type": "workday",
-        "tenant": "dal",
-        "ver": "wd3",
-    },
+
     # ── HTML careers pages ────────────────────────────────────────────────────
-    # These universities either don't use Workday or have accessible static listings.
+    # NOSM: confirmed career listing page
+    {
+        "name": "NOSM University",
+        "province": "Ontario",
+        "type": "html",
+        "urls": [
+            "https://www.nosm.ca/about/administrative-offices/human-resources/work-at-nosm/",
+            "https://www.nosm.ca/about/administrative-offices/human-resources/work-at-nosm/career-opportunity/",
+        ],
+    },
     {
         "name": "University of Toronto",
         "province": "Ontario",
@@ -247,10 +197,7 @@ UNIVERSITY_SOURCES = [
         "name": "University of Ottawa",
         "province": "Ontario",
         "type": "html",
-        "urls": [
-            "https://hr.uottawa.ca/en/careers",
-            "https://uottawa.njoyn.com/cl2/xweb/Xweb.asp?clid=57917&page=joblisting",
-        ],
+        "urls": ["https://hr.uottawa.ca/en/careers"],
     },
     {
         "name": "University of Victoria",
@@ -259,6 +206,16 @@ UNIVERSITY_SOURCES = [
         "urls": [
             "https://www.uvic.ca/hr/careers/",
             "https://www.uvic.ca/hr/careers/faculty/index.php",
+        ],
+    },
+    # UBC Faculty of Education posts jobs as standalone pages
+    {
+        "name": "UBC Faculty of Education",
+        "province": "British Columbia",
+        "type": "html",
+        "urls": [
+            "https://educ.ubc.ca/faculty-staff/jobs-at-educ/",
+            "https://educ.ubc.ca/about/jobs/",
         ],
     },
     {
@@ -281,12 +238,6 @@ UNIVERSITY_SOURCES = [
         "province": "Ontario",
         "type": "html",
         "urls": ["https://www.torontomu.ca/careers/faculty-positions/"],
-    },
-    {
-        "name": "Brock University",
-        "province": "Ontario",
-        "type": "html",
-        "urls": ["https://brocku.ca/human-resources/careers/faculty-positions/"],
     },
     {
         "name": "University of New Brunswick",
@@ -330,6 +281,8 @@ SEARCH_TERMS = [
     "neuroscience professor",
     "anatomy professor",
     "kinesiology professor",
+    "physical education lecturer",
+    "health sciences lecturer",
 ]
 
 # ── Headers ───────────────────────────────────────────────────────────────────
@@ -432,6 +385,117 @@ UA_AJAX_ENDPOINTS = [
     f"{UA_BASE}/wp-admin/admin-ajax.php",
 ]
 UA_SEARCH_URL = f"{UA_BASE}/search-jobs/"
+
+
+def fetch_ua_rss(session) -> list:
+    """
+    Try University Affairs RSS feeds.
+    WP Job Manager exposes RSS at /search-jobs/feed/ (all jobs) and
+    WordPress itself at /feed/?post_type=job_listing.
+    We pull all jobs and filter by our keywords.
+    """
+    rss_urls = [
+        f"{UA_BASE}/search-jobs/feed/",
+        f"{UA_BASE}/feed/?post_type=job_listing",
+        f"{UA_BASE}/career/feed/",
+    ]
+    jobs = []
+    for url in rss_urls:
+        try:
+            resp = session.get(url, headers=BROWSER_HEADERS, timeout=15)
+            if resp.status_code != 200:
+                continue
+            text = resp.text.strip()
+            if not text.startswith("<?xml") and not text.startswith("<rss"):
+                continue
+            root = ET.fromstring(text)
+            ns = {"content": "http://purl.org/rss/1.0/modules/content/"}
+            items = root.findall(".//item")
+            if not items:
+                continue
+            print(f"  → UA RSS: found {len(items)} items in feed")
+            for item in items:
+                title = item.findtext("title", "").strip()
+                link  = item.findtext("link",  "").strip()
+                desc  = item.findtext("description", "") or ""
+                # Try encoded content for richer text
+                content = item.find("content:encoded", ns)
+                body = content.text if content is not None and content.text else desc
+                # Filter: only keep relevant positions with matching subjects
+                if not title:
+                    continue
+                combined = (title + " " + body).lower()
+                has_subject  = any(kw in combined for kw in STRONG_KEYWORDS + PARTIAL_KEYWORDS)
+                has_position = any(kw in combined for kw in POSITION_KEYWORDS)
+                if not (has_subject and has_position):
+                    continue
+                # Try to extract institution from description
+                institution = ""
+                inst_match = re.search(r'<strong>([^<]+)</strong>', body)
+                if inst_match:
+                    institution = inst_match.group(1).strip()
+                # Try to find location
+                loc_match = re.search(r',\s*([A-Z]{2})\b', body)
+                location = loc_match.group(0).strip(", ") if loc_match else ""
+                jobs.append(make_job(
+                    title=title, institution=institution, location=location,
+                    province=get_province(location), url=link,
+                    source="University Affairs",
+                ))
+            if jobs:
+                print(f"  ✓ UA RSS: {len(jobs)} relevant jobs")
+                return jobs
+        except Exception as e:
+            print(f"     UA RSS ({url}): {e}")
+    return []
+
+
+def fetch_ua_wp_rest(session, keyword: str) -> list:
+    """
+    Try WordPress REST API for University Affairs job_listing post type.
+    This bypasses the JS-rendered frontend entirely.
+    """
+    url = f"{UA_BASE}/wp-json/wp/v2/job_listing"
+    params = {
+        "search": keyword,
+        "per_page": 100,
+        "status": "publish",
+        "_fields": "id,title,link,meta,excerpt",
+    }
+    jobs = []
+    try:
+        resp = session.get(url, params=params, headers=BROWSER_HEADERS, timeout=20)
+        if resp.status_code not in (200, 201):
+            return []
+        data = resp.json()
+        if not isinstance(data, list):
+            return []
+        for item in data:
+            raw_title = item.get("title", {})
+            title = BeautifulSoup(
+                raw_title.get("rendered", "") if isinstance(raw_title, dict) else str(raw_title),
+                "html.parser"
+            ).get_text(strip=True)
+            link = item.get("link", "")
+            meta = item.get("meta", {})
+            # WP Job Manager meta fields
+            def _meta(key):
+                v = meta.get(key, "")
+                if isinstance(v, list):
+                    return v[0] if v else ""
+                return str(v)
+            institution = _meta("_company_name")
+            location    = _meta("_job_location")
+            deadline_raw = _meta("_job_expires") or _meta("_application_deadline")
+            if title:
+                jobs.append(make_job(
+                    title=title, institution=institution, location=location,
+                    province=get_province(location), url=link,
+                    source="University Affairs", deadline=parse_deadline(deadline_raw),
+                ))
+    except Exception as e:
+        print(f"     UA WP REST ('{keyword}'): {e}")
+    return jobs
 
 
 def fetch_ua_ajax(session, keywords: str, page: int = 1) -> list:
@@ -605,6 +669,69 @@ def fetch_workday(session, name: str, tenant: str, province: str, preferred_ver:
         print(f"  ✓ {name}: {len(jobs)} jobs via Workday")
     else:
         print(f"  ✗ {name}: Workday API unreachable or no results")
+
+    return jobs
+
+
+# ── Workday Jobs site scraper (myworkdayjobs.com) ────────────────────────────
+# Different URL structure from myworkday.com:
+# Search: POST https://{tenant}.{ver}.myworkdayjobs.com/wday/cxs/{tenant}/{career_site}/jobs/search
+# Confirmed: brocku.wd3.myworkdayjobs.com/brocku_careers
+
+
+def fetch_workday_jobs_site(session, name: str, tenant: str, career_site: str,
+                             province: str, ver: str = "wd3") -> list:
+    """Search a Workday Jobs Portal (myworkdayjobs.com) via its JSON search API."""
+    base = f"https://{tenant}.{ver}.myworkdayjobs.com"
+    search_url = f"{base}/wday/cxs/{tenant}/{career_site}/jobs/search"
+    headers = {
+        **WORKDAY_HEADERS,
+        "Origin": base,
+        "Referer": f"{base}/{career_site}",
+    }
+
+    jobs = []
+    seen_ids = set()
+    api_reachable = False
+
+    for term in SEARCH_TERMS:
+        payload = {"appliedFacets": {}, "limit": 20, "offset": 0, "searchText": term}
+        try:
+            resp = session.post(search_url, json=payload, headers=headers, timeout=15)
+            if resp.status_code == 404:
+                print(f"  ✗ {name}: myworkdayjobs.com endpoint 404 — career_site alias may be wrong")
+                break
+            if resp.status_code not in (200, 201):
+                continue
+
+            data = resp.json()
+            api_reachable = True
+            for p in data.get("jobPostings", []):
+                title = p.get("title", "")
+                if not title or not is_relevant_position(title):
+                    continue
+                ext_path = p.get("externalPath", "")
+                job_url = f"{base}{ext_path}" if ext_path else base
+                if job_url in seen_ids:
+                    continue
+                seen_ids.add(job_url)
+                loc = p.get("locationsText", province)
+                jobs.append(make_job(
+                    title=title, institution=name, location=loc,
+                    province=get_province(loc) or province,
+                    url=job_url, source=name, date_posted=p.get("postedOn", ""),
+                ))
+            time.sleep(0.8)
+
+        except Exception as e:
+            print(f"     Workday Jobs {name} ('{term}'): {e}")
+
+    if jobs:
+        print(f"  ✓ {name}: {len(jobs)} jobs via myworkdayjobs.com")
+    elif not api_reachable:
+        print(f"  ✗ {name}: myworkdayjobs.com API unreachable")
+    else:
+        print(f"  ✗ {name}: API reachable but no matching positions found")
 
     return jobs
 
@@ -791,8 +918,27 @@ def main():
     sources_checked.append("University Affairs")
 
     ua_total = 0
+
+    # Approach 1: RSS feed (most reliable — no JS needed)
+    print("\nTrying UA RSS feed...")
+    rss_jobs = fetch_ua_rss(session)
+    ua_total += add_jobs(rss_jobs, "University Affairs")
+    time.sleep(1.5)
+
+    # Approach 2: WordPress REST API per keyword
+    print("\nTrying UA WordPress REST API...")
     for term in SEARCH_TERMS:
-        print(f"\nSearching UA: '{term}'")
+        rest_jobs = fetch_ua_wp_rest(session, term)
+        added = add_jobs(rest_jobs, "University Affairs")
+        if added:
+            print(f"  WP REST '{term}': +{added}")
+        ua_total += added
+        time.sleep(1)
+
+    # Approach 3: WP Job Manager AJAX (original method, now tertiary)
+    print("\nTrying UA AJAX endpoints...")
+    for term in SEARCH_TERMS:
+        print(f"\nSearching UA AJAX: '{term}'")
         jobs = fetch_ua_ajax(session, term)
         if not jobs:
             jobs = fetch_ua_html_fallback(session, term)
@@ -819,12 +965,17 @@ def main():
                 session, name, uni["tenant"], province,
                 preferred_ver=uni.get("ver", "wd5")
             )
+        elif src_type == "workday_jobs":
+            jobs = fetch_workday_jobs_site(
+                session, name, uni["tenant"], uni["career_site"],
+                province, ver=uni.get("ver", "wd3")
+            )
         elif src_type == "html":
             jobs = fetch_html_careers(session, name, province, uni["urls"])
         else:
             jobs = []
 
-        # Position-type filter (for HTML scrapers that return raw links)
+        # Position-type filter for HTML scrapers (Workday already filters)
         if src_type == "html":
             jobs = [j for j in jobs if is_relevant_position(j.get("title", ""))]
 
