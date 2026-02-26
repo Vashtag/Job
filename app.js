@@ -1,7 +1,6 @@
 /**
  * Academic Job Board — app.js
- * Loads jobs.json, renders province-grouped job cards.
- * Ontario + BC shown first; other provinces behind an expand button.
+ * Loads jobs.json, renders province-grouped tables in Cat Alert style.
  */
 
 // ── Config ────────────────────────────────────────────────────────────────
@@ -20,69 +19,29 @@ const PROVINCE_ORDER = [
 
 let allJobs = [];
 let activeMatchFilter = "all";
+let activeSourceFilter = "all";
 let activeSearch = "";
 
-// ── Utilities ─────────────────────────────────────────────────────────────
+// ── Dark mode ─────────────────────────────────────────────────────────────
 
-/**
- * Format an ISO timestamp into a human-readable string.
- */
-function formatTimestamp(iso) {
-  if (!iso) return "never";
-  const d = new Date(iso);
-  return d.toLocaleString("en-CA", {
-    timeZone: "America/Toronto",
-    year: "numeric", month: "short", day: "numeric",
-    hour: "2-digit", minute: "2-digit",
-  }) + " EST";
+function applyTheme(theme) {
+  document.documentElement.setAttribute("data-theme", theme);
+  const btn = document.getElementById("theme-toggle");
+  if (btn) btn.textContent = theme === "dark" ? "☀️ Light" : "🌙 Dark";
 }
 
-/**
- * Classify a deadline string into urgency: "ok" | "warn" | "red" | "unknown"
- */
-function deadlineUrgency(deadlineStr) {
-  if (!deadlineStr) return "unknown";
-
-  const now = new Date();
-  const deadline = new Date(deadlineStr);
-  if (isNaN(deadline.getTime())) return "unknown";
-
-  const days = Math.ceil((deadline - now) / (1000 * 60 * 60 * 24));
-  if (days < 0)  return "past";
-  if (days <= 14) return "red";
-  if (days <= 28) return "warn";
-  return "ok";
+function toggleTheme() {
+  const current = document.documentElement.getAttribute("data-theme");
+  const next = current === "dark" ? "light" : "dark";
+  applyTheme(next);
+  localStorage.setItem("acad-job-theme", next);
 }
 
-/**
- * Format deadline for display. Returns an object { text, cssClass }.
- */
-function formatDeadline(deadlineStr) {
-  if (!deadlineStr) return { text: "Deadline: not listed", cssClass: "deadline-ok" };
+// Expose globally for onclick
+window.toggleTheme = toggleTheme;
 
-  const urgency = deadlineUrgency(deadlineStr);
+// ── Helpers ───────────────────────────────────────────────────────────────
 
-  if (urgency === "past") {
-    return { text: `Closed: ${deadlineStr}`, cssClass: "deadline-ok" };
-  }
-
-  const classMap = { ok: "deadline-ok", warn: "deadline-warn", red: "deadline-red", unknown: "deadline-ok" };
-  const prefixMap = {
-    ok:      "Deadline:",
-    warn:    "⚠ Deadline:",
-    red:     "⚡ Deadline:",
-    unknown: "Deadline:",
-  };
-
-  return {
-    text: `${prefixMap[urgency] || "Deadline:"} ${deadlineStr}`,
-    cssClass: classMap[urgency] || "deadline-ok",
-  };
-}
-
-/**
- * Escape HTML to safely insert user-provided strings.
- */
 function esc(str) {
   return String(str || "")
     .replace(/&/g, "&amp;")
@@ -91,23 +50,59 @@ function esc(str) {
     .replace(/"/g, "&quot;");
 }
 
+function fmtTimestamp(iso) {
+  if (!iso) return "never";
+  const d = new Date(iso);
+  return d.toLocaleString("en-CA", {
+    timeZone: "America/Toronto",
+    month: "short", day: "numeric", year: "numeric",
+    hour: "2-digit", minute: "2-digit",
+  }) + " ET";
+}
+
+function fmtRelative(iso) {
+  if (!iso) return "";
+  const diff = Math.round((Date.now() - new Date(iso)) / 1000);
+  if (diff < 90)    return `${diff}s ago`;
+  if (diff < 3600)  return `${Math.round(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.round(diff / 3600)}h ago`;
+  return `${Math.round(diff / 86400)}d ago`;
+}
+
+function deadlineClass(deadlineStr) {
+  if (!deadlineStr) return "dl-none";
+  const d = new Date(deadlineStr);
+  if (isNaN(d)) return "dl-none";
+  const days = Math.ceil((d - Date.now()) / 86400000);
+  if (days < 0)  return "dl-ok";   // past — show grey
+  if (days <= 14) return "dl-red";
+  if (days <= 28) return "dl-warn";
+  return "dl-ok";
+}
+
+function deadlineLabel(deadlineStr) {
+  if (!deadlineStr) return '<span class="dl-none">Deadline: not listed</span>';
+  const cls = deadlineClass(deadlineStr);
+  const d = new Date(deadlineStr);
+  const days = isNaN(d) ? null : Math.ceil((d - Date.now()) / 86400000);
+  let prefix = "Deadline:";
+  if (days !== null && days >= 0 && days <= 14) prefix = "⚡ Deadline:";
+  else if (days !== null && days >= 0 && days <= 28) prefix = "⚠ Deadline:";
+  return `<span class="${cls}">${prefix} ${esc(deadlineStr)}</span>`;
+}
+
 // ── Filtering ─────────────────────────────────────────────────────────────
 
 function filterJobs(jobs) {
-  return jobs.filter((job) => {
-    // Match filter
-    if (activeMatchFilter === "strong" && job.match !== "strong") return false;
-    if (activeMatchFilter === "strong,partial" && !["strong", "partial"].includes(job.match)) return false;
-
-    // Keyword search
+  return jobs.filter((j) => {
+    if (activeMatchFilter === "strong" && j.match !== "strong") return false;
+    if (activeMatchFilter === "strong,partial" && !["strong", "partial"].includes(j.match)) return false;
+    if (activeSourceFilter !== "all" && j.source !== activeSourceFilter) return false;
     if (activeSearch) {
       const q = activeSearch.toLowerCase();
-      const haystack = [job.title, job.institution, job.location, job.province]
-        .join(" ")
-        .toLowerCase();
-      if (!haystack.includes(q)) return false;
+      const hay = [j.title, j.institution, j.location, j.province, j.source].join(" ").toLowerCase();
+      if (!hay.includes(q)) return false;
     }
-
     return true;
   });
 }
@@ -115,64 +110,62 @@ function filterJobs(jobs) {
 // ── Rendering ─────────────────────────────────────────────────────────────
 
 function renderBadge(match) {
-  if (match === "strong") {
-    return `<span class="badge badge-strong">Strong Match</span>`;
-  }
-  if (match === "partial") {
-    return `<span class="badge badge-partial">Partial Match</span>`;
-  }
+  if (match === "strong")  return `<span class="badge badge-strong">Strong Match</span>`;
+  if (match === "partial") return `<span class="badge badge-partial">Partial Match</span>`;
   return "";
 }
 
-function renderJobCard(job) {
-  const dl = formatDeadline(job.deadline);
+function renderJobRow(job) {
   const applyUrl = esc(job.apply_url || job.url || "#");
-  const postingUrl = esc(job.url || "#");
-  const matchClass = job.match === "strong" ? "match-strong" : job.match === "partial" ? "match-partial" : "";
+  const postUrl  = esc(job.url || "#");
+  const source   = esc(job.source || "");
+  const inst     = esc(job.institution || "Institution not listed");
 
   return `
-    <div class="job-card ${matchClass}">
-      <div class="job-main">
-        <div class="job-title">
-          <a href="${postingUrl}" target="_blank" rel="noopener">${esc(job.title)}</a>
-        </div>
-        <div class="job-institution">${esc(job.institution || "Institution not listed")}</div>
-        <div class="job-meta">
-          ${job.location ? `<span class="job-location">📍 ${esc(job.location)}</span>` : ""}
-          <span class="job-deadline ${dl.cssClass}">${esc(dl.text)}</span>
-        </div>
-      </div>
-      <div class="job-actions">
-        ${renderBadge(job.match)}
+    <tr>
+      <td class="col-title">
+        <a class="job-title-link" href="${postUrl}" target="_blank" rel="noopener">${esc(job.title)}</a>
+        ${source ? `<div class="job-source">via ${source}</div>` : ""}
+      </td>
+      <td class="col-inst">${inst}</td>
+      <td class="col-dl">${deadlineLabel(job.deadline)}</td>
+      <td class="col-match">${renderBadge(job.match)}</td>
+      <td class="col-apply">
         <a class="btn-apply" href="${applyUrl}" target="_blank" rel="noopener">Apply →</a>
-      </div>
-    </div>
+      </td>
+    </tr>
   `.trim();
 }
 
 function renderProvinceSection(province, jobs) {
-  const cards = jobs.map(renderJobCard).join("\n");
-  const count = jobs.length;
-
+  const rows = jobs.map(renderJobRow).join("\n");
   return `
     <section class="province-section">
-      <div class="province-header">
-        <span class="province-name">${esc(province)}</span>
-        <span class="province-count">${count} posting${count !== 1 ? "s" : ""}</span>
+      <div class="section-title">
+        ${esc(province)}
+        <span class="province-count">${jobs.length} posting${jobs.length !== 1 ? "s" : ""}</span>
       </div>
-      <div class="jobs-grid">
-        ${cards}
-      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Position</th>
+            <th>Institution</th>
+            <th>Deadline</th>
+            <th>Match</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
     </section>
   `.trim();
 }
 
 function groupByProvince(jobs) {
   const groups = {};
-  for (const job of jobs) {
-    const p = job.province || "Unknown";
-    if (!groups[p]) groups[p] = [];
-    groups[p].push(job);
+  for (const j of jobs) {
+    const p = j.province || "Unknown";
+    (groups[p] = groups[p] || []).push(j);
   }
   return groups;
 }
@@ -181,17 +174,16 @@ function render(jobs) {
   const app = document.getElementById("app");
   const filtered = filterJobs(jobs);
 
-  // Update count
-  document.getElementById("job-count").textContent =
-    `${filtered.length} posting${filtered.length !== 1 ? "s" : ""} shown`;
+  // Update summary cards
+  document.getElementById("val-total").textContent   = filtered.length;
+  document.getElementById("val-strong").textContent  = filtered.filter(j => j.match === "strong").length;
+  document.getElementById("val-partial").textContent = filtered.filter(j => j.match === "partial").length;
 
   if (filtered.length === 0) {
     app.innerHTML = `
       <div class="empty-state">
         <p>No job postings match your current filters.</p>
-        <p style="font-size:0.8rem;color:var(--text-dim)">
-          Try broadening the match filter or clearing the search.
-        </p>
+        <p>Try broadening the match filter, clearing the search, or triggering a manual scrape.</p>
       </div>
     `;
     return;
@@ -199,122 +191,135 @@ function render(jobs) {
 
   const groups = groupByProvince(filtered);
 
-  // Split into priority (ON, BC) and others
-  const prioritySections = [];
-  const otherSections = [];
-
-  // Sort provinces by PROVINCE_ORDER, with anything else alphabetically after
   const sortedProvinces = Object.keys(groups).sort((a, b) => {
     const ai = PROVINCE_ORDER.indexOf(a);
     const bi = PROVINCE_ORDER.indexOf(b);
-    const an = ai === -1 ? 999 : ai;
-    const bn = bi === -1 ? 999 : bi;
-    if (an !== bn) return an - bn;
-    return a.localeCompare(b);
+    return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi) || a.localeCompare(b);
   });
 
-  for (const province of sortedProvinces) {
-    const html = renderProvinceSection(province, groups[province]);
-    if (PRIORITY_PROVINCES.includes(province)) {
-      prioritySections.push(html);
+  const priorityHTML = [];
+  const otherHTML    = [];
+  let   otherCount   = 0;
+
+  for (const p of sortedProvinces) {
+    const html = renderProvinceSection(p, groups[p]);
+    if (PRIORITY_PROVINCES.includes(p)) {
+      priorityHTML.push(html);
     } else {
-      otherSections.push(html);
+      otherHTML.push(html);
+      otherCount += groups[p].length;
     }
   }
 
-  let html = prioritySections.join("\n");
+  let out = priorityHTML.join("\n");
 
-  if (otherSections.length > 0) {
-    const otherCount = otherSections.reduce((n, _, i) => {
-      const match = otherSections[i].match(/class="province-count">(\d+)/);
-      return n + (match ? parseInt(match[1]) : 0);
-    }, 0);
-
-    html += `
+  if (otherHTML.length) {
+    out += `
       <div class="expand-section">
         <button class="btn-expand" id="btn-expand">
-          Show other provinces (${otherCount} more posting${otherCount !== 1 ? "s" : ""})
+          Show other provinces (${otherCount} posting${otherCount !== 1 ? "s" : ""})
         </button>
       </div>
       <div class="other-provinces" id="other-provinces">
-        ${otherSections.join("\n")}
+        ${otherHTML.join("\n")}
       </div>
     `;
   }
 
-  app.innerHTML = html;
+  app.innerHTML = out;
 
-  // Wire up expand button
+  // Wire expand button
   const btn = document.getElementById("btn-expand");
-  const otherDiv = document.getElementById("other-provinces");
-  if (btn && otherDiv) {
+  const div = document.getElementById("other-provinces");
+  if (btn && div) {
     btn.addEventListener("click", () => {
-      otherDiv.classList.toggle("visible");
-      if (otherDiv.classList.contains("visible")) {
-        btn.textContent = "Hide other provinces";
-      } else {
-        btn.textContent = btn.textContent.replace("Hide", "Show");
-      }
+      div.classList.toggle("visible");
+      btn.textContent = div.classList.contains("visible")
+        ? "Hide other provinces"
+        : `Show other provinces (${otherCount} posting${otherCount !== 1 ? "s" : ""})`;
     });
   }
 }
 
-// ── Data Loading ──────────────────────────────────────────────────────────
+// ── Populate source filter dropdown ───────────────────────────────────────
 
-async function loadJobs() {
+function populateSourceFilter(jobs) {
+  const select = document.getElementById("filter-source");
+  const sources = [...new Set(jobs.map(j => j.source || "Unknown"))].sort();
+  sources.forEach((src) => {
+    const opt = document.createElement("option");
+    opt.value = src;
+    opt.textContent = src;
+    select.appendChild(opt);
+  });
+}
+
+// ── Data loading ──────────────────────────────────────────────────────────
+
+async function load() {
   try {
-    // Cache-bust so GitHub Pages doesn't serve stale jobs.json
-    const url = `jobs.json?t=${Math.floor(Date.now() / 60000)}`;
-    const resp = await fetch(url);
-
+    const resp = await fetch(`jobs.json?t=${Math.floor(Date.now() / 60000)}`);
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-
     const data = await resp.json();
 
-    // Update last-updated timestamp
-    const lastUpdatedEl = document.getElementById("last-updated");
+    // Timestamps
+    const updatedEl = document.getElementById("val-updated");
+    const subEl     = document.getElementById("sub-updated");
     if (data.last_updated) {
-      lastUpdatedEl.textContent = `Updated: ${formatTimestamp(data.last_updated)}`;
+      updatedEl.textContent = fmtRelative(data.last_updated);
+      subEl.textContent     = fmtTimestamp(data.last_updated);
     } else {
-      lastUpdatedEl.textContent = "Not yet refreshed — trigger the GitHub Action manually";
+      updatedEl.textContent = "—";
+      subEl.textContent     = "Not yet scraped";
+    }
+
+    // Sources count
+    const srcVal = document.getElementById("val-sources");
+    const srcSub = document.getElementById("sub-sources");
+    if (data.sources_checked !== undefined) {
+      srcVal.textContent = `${data.sources_successful ?? "?"} / ${data.sources_checked}`;
+      srcSub.textContent = "returned results";
     }
 
     allJobs = data.jobs || [];
 
     if (allJobs.length === 0) {
+      document.getElementById("val-total").textContent   = "0";
+      document.getElementById("val-strong").textContent  = "0";
+      document.getElementById("val-partial").textContent = "0";
       document.getElementById("app").innerHTML = `
         <div class="empty-state">
           <p>No job postings found yet.</p>
-          <p style="font-size:0.8rem;color:var(--text-dim)">
-            The scraper may not have run yet. Go to your repository → Actions →
-            "Refresh Job Listings" → Run workflow to trigger it manually.
-          </p>
+          <p>Click <strong>Run Scraper Now</strong> above to trigger the first scrape,<br>
+             then reload this page after ~2 minutes.</p>
         </div>
       `;
-      document.getElementById("job-count").textContent = "0 postings";
       return;
     }
 
+    populateSourceFilter(allJobs);
     render(allJobs);
 
   } catch (err) {
-    console.error("Failed to load jobs.json:", err);
+    console.error(err);
     document.getElementById("app").innerHTML = `
-      <div class="error-state">
-        <p>Could not load job listings.</p>
-        <p style="font-size:0.8rem;">${esc(err.message)}</p>
-        <p style="font-size:0.75rem;color:var(--text-dim)">
-          Make sure jobs.json exists in the repository root and GitHub Pages is enabled.
-        </p>
+      <div class="empty-state">
+        <p>Could not load jobs.json — ${esc(err.message)}</p>
+        <p>Make sure GitHub Pages is enabled and the scraper has run at least once.</p>
       </div>
     `;
   }
 }
 
-// ── Filter Events ─────────────────────────────────────────────────────────
+// ── Filter event listeners ────────────────────────────────────────────────
 
 document.getElementById("filter-match").addEventListener("change", (e) => {
   activeMatchFilter = e.target.value;
+  render(allJobs);
+});
+
+document.getElementById("filter-source").addEventListener("change", (e) => {
+  activeSourceFilter = e.target.value;
   render(allJobs);
 });
 
@@ -329,4 +334,8 @@ document.getElementById("filter-search").addEventListener("input", (e) => {
 
 // ── Init ──────────────────────────────────────────────────────────────────
 
-loadJobs();
+// Restore saved theme preference (default: dark)
+applyTheme(localStorage.getItem("acad-job-theme") || "dark");
+
+load();
+setInterval(load, 60_000);

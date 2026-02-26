@@ -1,59 +1,93 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Academic Job Board — Neuroscience &amp; Anatomy (Canada)</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+<div class="wrapper">
 
+  <!-- ── Header ─────────────────────────────────────────────────────────── -->
   <header>
-    <div class="header-inner">
-      <div class="header-title">
-        <h1>Academic Job Board</h1>
-        <p class="subtitle">Neuroscience · Anatomy · Kinesiology · Neuroanatomy — Canada</p>
-      </div>
-      <div class="header-meta">
-        <span id="last-updated" class="last-updated">Loading…</span>
-        <span id="job-count" class="job-count"></span>
-      </div>
-    </div>
-
-    <div class="filter-bar">
-      <div class="filter-group">
-        <label for="filter-match">Match</label>
-        <select id="filter-match">
-          <option value="all">All</option>
-          <option value="strong">Strong only</option>
-          <option value="strong,partial">Strong &amp; Partial</option>
-        </select>
-      </div>
-      <div class="filter-group">
-        <label for="filter-search">Search</label>
-        <input id="filter-search" type="text" placeholder="Filter by keyword…" autocomplete="off" />
-      </div>
-    </div>
+    <h1>🎓 Academic Job Board</h1>
+    <p>Neuroscience · Anatomy · Kinesiology · Neuroanatomy — Canada</p>
+    <button id="theme-toggle" onclick="toggleTheme()" title="Toggle light/dark mode">☀️ Light</button>
   </header>
 
-  <main id="app">
-    <div class="loading-state">
-      <div class="spinner"></div>
-      <p>Fetching job listings…</p>
+  <!-- ── Control buttons ────────────────────────────────────────────────── -->
+  <div class="controls">
+    <a class="btn btn-run"
+       href="https://github.com/Vashtag/Job/actions/workflows/scrape.yml"
+       target="_blank"
+       title="Opens GitHub Actions — click 'Run workflow' to refresh listings now">
+      🔍 Run Scraper Now
+    </a>
+    <a class="btn btn-ua"
+       href="https://www.universityaffairs.ca/search-jobs/"
+       target="_blank"
+       title="Browse University Affairs directly">
+      📋 University Affairs
+    </a>
+  </div>
+
+  <!-- ── Summary cards ──────────────────────────────────────────────────── -->
+  <div class="cards">
+    <div class="card">
+      <div class="label">Last Updated</div>
+      <div class="value" id="val-updated">—</div>
+      <div class="sub" id="sub-updated">never</div>
     </div>
-  </main>
+    <div class="card blue">
+      <div class="label">Total Postings</div>
+      <div class="value" id="val-total">—</div>
+      <div class="sub">matching positions</div>
+    </div>
+    <div class="card green">
+      <div class="label">Strong Matches</div>
+      <div class="value" id="val-strong">—</div>
+      <div class="sub">neuroscience / anatomy</div>
+    </div>
+    <div class="card amber">
+      <div class="label">Partial Matches</div>
+      <div class="value" id="val-partial">—</div>
+      <div class="sub">physiology / stats</div>
+    </div>
+    <div class="card grey" id="card-sources">
+      <div class="label">Sources Checked</div>
+      <div class="value" id="val-sources">—</div>
+      <div class="sub" id="sub-sources">universities + UA</div>
+    </div>
+  </div>
 
-  <footer>
-    <p>
-      Data sourced from
-      <a href="https://www.universityaffairs.ca/search-jobs/" target="_blank" rel="noopener">
-        University Affairs
-      </a>.
-      Refreshed automatically twice daily via GitHub Actions.
-      Verify all postings before applying — deadlines may change.
-    </p>
-  </footer>
+  <!-- ── Filter bar ──────────────────────────────────────────────────────── -->
+  <div class="filter-bar">
+    <span class="filter-label">Filter:</span>
+    <select id="filter-match">
+      <option value="all">All matches</option>
+      <option value="strong">Strong only</option>
+      <option value="strong,partial">Strong &amp; Partial</option>
+    </select>
+    <select id="filter-source">
+      <option value="all">All sources</option>
+    </select>
+    <input id="filter-search" type="text" placeholder="Search title / institution…" autocomplete="off" />
+  </div>
 
-  <script src="app.js"></script>
+  <!-- ── Job listings ────────────────────────────────────────────────────── -->
+  <div id="app">
+    <div class="empty-state">Loading job listings…</div>
+  </div>
+
+  <!-- ── Status bar ──────────────────────────────────────────────────────── -->
+  <div id="status-bar">
+    Auto-refreshes every 60 s &nbsp;·&nbsp; Data from <code>jobs.json</code> &nbsp;·&nbsp;
+    Source: <a href="https://www.universityaffairs.ca/search-jobs/" target="_blank">University Affairs</a>
+    + individual university career pages
+  </div>
+
+</div>
+<script src="app.js"></script>
 </body>
 </html>

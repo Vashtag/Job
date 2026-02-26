@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 """
-Scraper for Canadian academic teaching job postings.
-Sources: University Affairs (universityaffairs.ca)
-Runs via GitHub Actions twice daily and writes jobs.json.
+Academic job scraper — Canada
+Sources:
+  1. University Affairs (universityaffairs.ca) — primary, covers most CA postings
+  2. Workday API — for universities that use Workday ATS
+  3. HTML careers pages — for universities with accessible static listings
+
+Outputs jobs.json (read by the frontend).
 """
 
 import json
@@ -16,63 +20,41 @@ try:
     import requests
     from bs4 import BeautifulSoup
 except ImportError:
-    print("ERROR: Missing dependencies. Run: pip install requests beautifulsoup4")
+    print("ERROR: pip install requests beautifulsoup4")
     sys.exit(1)
 
-# ── Configuration ────────────────────────────────────────────────────────────
+# ── Output ────────────────────────────────────────────────────────────────────
 
 OUTPUT_FILE = "jobs.json"
 
-BASE_URL = "https://www.universityaffairs.ca"
+# ── Match scoring ─────────────────────────────────────────────────────────────
 
-# University Affairs uses WP Job Manager; two AJAX endpoints to try
-UA_AJAX_ENDPOINTS = [
-    f"{BASE_URL}/jm-ajax/get_listings/",
-    f"{BASE_URL}/wp-admin/admin-ajax.php",
-]
-
-# Fallback: direct search URL (HTML scrape)
-UA_SEARCH_URL = f"{BASE_URL}/search-jobs/"
-
-# Keywords to search for (run one query per keyword group)
-SEARCH_KEYWORD_GROUPS = [
-    "neuroscience anatomy",
-    "kinesiology anatomy",
-    "neuroanatomy",
-    "neuroscience lecturer",
-    "anatomy lecturer",
-    "kinesiology lecturer",
-    "physiology lecturer",
-    "neuroscience assistant professor",
-    "anatomy assistant professor",
-]
-
-# Subject keywords for match scoring
 STRONG_KEYWORDS = [
     "neuroscience", "anatomy", "kinesiology", "neuroanatomy",
     "neurological", "neural", "brain", "nervous system",
     "sensorimotor", "musculoskeletal", "neurobiology",
     "gross anatomy", "neurophysiology", "cognitive neuroscience",
     "systems neuroscience", "behavioural neuroscience",
-    "behavioral neuroscience", "human anatomy",
+    "behavioral neuroscience", "human anatomy", "spinal cord",
 ]
 
 PARTIAL_KEYWORDS = [
     "physiology", "psychology", "statistics", "biostatistics",
     "biology", "health science", "biomechanics", "motor control",
     "rehabilitation", "exercise science", "human kinetics",
-    "histology", "cell biology", "molecular biology",
+    "histology", "cell biology", "molecular biology", "motor learning",
 ]
 
-# Position types to include
 POSITION_KEYWORDS = [
-    "assistant professor", "lecturer", "teaching stream",
-    "limited-term", "limited term", "visiting professor",
-    "associate professor", "teaching faculty", "instructor",
+    "assistant professor", "associate professor", "lecturer",
+    "teaching stream", "limited-term", "limited term",
+    "visiting professor", "teaching faculty", "instructor",
     "sessional", "academic position", "faculty position",
+    "professor of teaching", "clinical professor",
 ]
 
-# Province abbreviation → full name
+# ── Province mapping ──────────────────────────────────────────────────────────
+
 PROVINCE_ABBREVS = {
     "AB": "Alberta", "BC": "British Columbia", "MB": "Manitoba",
     "NB": "New Brunswick", "NL": "Newfoundland and Labrador",
@@ -82,7 +64,6 @@ PROVINCE_ABBREVS = {
     "SK": "Saskatchewan", "YT": "Yukon",
 }
 
-# City → Province (Canadian cities)
 CITY_TO_PROVINCE = {
     # Ontario
     "toronto": "Ontario", "ottawa": "Ontario", "hamilton": "Ontario",
@@ -91,11 +72,10 @@ CITY_TO_PROVINCE = {
     "thunder bay": "Ontario", "barrie": "Ontario", "peterborough": "Ontario",
     "oshawa": "Ontario", "mississauga": "Ontario", "brampton": "Ontario",
     "markham": "Ontario", "st. catharines": "Ontario", "north bay": "Ontario",
-    "sault ste. marie": "Ontario", "brantford": "Ontario", "whitby": "Ontario",
-    "timmins": "Ontario", "belleville": "Ontario", "st catharines": "Ontario",
+    "sault ste. marie": "Ontario", "brantford": "Ontario",
     "niagara falls": "Ontario", "cambridge": "Ontario", "oakville": "Ontario",
-    "burlington": "Ontario", "richmond hill": "Ontario", "st. thomas": "Ontario",
-    "scarborough": "Ontario", "etobicoke": "Ontario",
+    "burlington": "Ontario", "timmins": "Ontario", "belleville": "Ontario",
+    "st catharines": "Ontario", "scarborough": "Ontario",
     # British Columbia
     "vancouver": "British Columbia", "victoria": "British Columbia",
     "burnaby": "British Columbia", "kelowna": "British Columbia",
@@ -103,52 +83,256 @@ CITY_TO_PROVINCE = {
     "richmond": "British Columbia", "prince george": "British Columbia",
     "kamloops": "British Columbia", "nanaimo": "British Columbia",
     "chilliwack": "British Columbia", "langley": "British Columbia",
-    "delta": "British Columbia", "north vancouver": "British Columbia",
-    "west vancouver": "British Columbia", "coquitlam": "British Columbia",
-    "new westminster": "British Columbia", "penticton": "British Columbia",
-    "trail": "British Columbia", "nelson": "British Columbia",
-    "castlegar": "British Columbia",
+    "north vancouver": "British Columbia", "new westminster": "British Columbia",
+    "penticton": "British Columbia", "squamish": "British Columbia",
     # Quebec
     "montreal": "Quebec", "québec": "Quebec", "quebec city": "Quebec",
     "laval": "Quebec", "sherbrooke": "Quebec", "gatineau": "Quebec",
     "trois-rivières": "Quebec", "trois-rivieres": "Quebec",
-    "saguenay": "Quebec", "lévis": "Quebec", "longueuil": "Quebec",
+    "saguenay": "Quebec", "longueuil": "Quebec",
     # Alberta
     "calgary": "Alberta", "edmonton": "Alberta", "red deer": "Alberta",
     "lethbridge": "Alberta", "medicine hat": "Alberta",
     "grande prairie": "Alberta", "fort mcmurray": "Alberta",
-    "airdrie": "Alberta", "spruce grove": "Alberta", "camrose": "Alberta",
     # Saskatchewan
     "saskatoon": "Saskatchewan", "regina": "Saskatchewan",
     "prince albert": "Saskatchewan", "moose jaw": "Saskatchewan",
-    "swift current": "Saskatchewan",
     # Manitoba
     "winnipeg": "Manitoba", "brandon": "Manitoba",
-    "thompson": "Manitoba", "portage la prairie": "Manitoba",
     # New Brunswick
     "moncton": "New Brunswick", "fredericton": "New Brunswick",
     "saint john": "New Brunswick", "bathurst": "New Brunswick",
-    "miramichi": "New Brunswick",
     # Nova Scotia
     "halifax": "Nova Scotia", "sydney": "Nova Scotia",
-    "truro": "Nova Scotia", "new glasgow": "Nova Scotia",
-    "dartmouth": "Nova Scotia", "wolfville": "Nova Scotia",
-    "antigonish": "Nova Scotia",
-    # Prince Edward Island
+    "truro": "Nova Scotia", "wolfville": "Nova Scotia",
+    "antigonish": "Nova Scotia", "dartmouth": "Nova Scotia",
+    # PEI
     "charlottetown": "Prince Edward Island",
-    "summerside": "Prince Edward Island",
-    # Newfoundland and Labrador
+    # Newfoundland
     "st. john's": "Newfoundland and Labrador",
     "st johns": "Newfoundland and Labrador",
     "corner brook": "Newfoundland and Labrador",
-    "grand falls-windsor": "Newfoundland and Labrador",
     # Territories
     "yellowknife": "Northwest Territories",
     "whitehorse": "Yukon",
     "iqaluit": "Nunavut",
 }
 
-# ── Helpers ──────────────────────────────────────────────────────────────────
+# ── University sources ────────────────────────────────────────────────────────
+# Each entry must have: name, province, type ("workday" | "html")
+# Workday entries need: tenant (and optionally ver)
+# HTML entries need: urls (list of fallback URLs to try)
+
+UNIVERSITY_SOURCES = [
+    # ── Workday universities ──────────────────────────────────────────────────
+    # Tenant names verified from known Workday career site URLs.
+    # If a tenant resolves to 404, the scraper silently skips it.
+    {
+        "name": "McMaster University",
+        "province": "Ontario",
+        "type": "workday",
+        "tenant": "mcmaster",
+        "ver": "wd5",
+    },
+    {
+        "name": "Western University",
+        "province": "Ontario",
+        "type": "workday",
+        "tenant": "uwo",
+        "ver": "wd3",
+    },
+    {
+        "name": "University of Waterloo",
+        "province": "Ontario",
+        "type": "workday",
+        "tenant": "uwaterloo",
+        "ver": "wd3",
+    },
+    {
+        "name": "Queen's University",
+        "province": "Ontario",
+        "type": "workday",
+        "tenant": "queensu",
+        "ver": "wd5",
+    },
+    {
+        "name": "Carleton University",
+        "province": "Ontario",
+        "type": "workday",
+        "tenant": "carleton",
+        "ver": "wd5",
+    },
+    {
+        "name": "York University",
+        "province": "Ontario",
+        "type": "workday",
+        "tenant": "yorkuniversity",
+        "ver": "wd5",
+    },
+    {
+        "name": "University of Guelph",
+        "province": "Ontario",
+        "type": "workday",
+        "tenant": "uguelph",
+        "ver": "wd5",
+    },
+    {
+        "name": "University of Calgary",
+        "province": "Alberta",
+        "type": "workday",
+        "tenant": "ucalgary",
+        "ver": "wd5",
+    },
+    {
+        "name": "University of Alberta",
+        "province": "Alberta",
+        "type": "workday",
+        "tenant": "ualberta",
+        "ver": "wd5",
+    },
+    {
+        "name": "University of Manitoba",
+        "province": "Manitoba",
+        "type": "workday",
+        "tenant": "umanitoba",
+        "ver": "wd5",
+    },
+    {
+        "name": "University of Saskatchewan",
+        "province": "Saskatchewan",
+        "type": "workday",
+        "tenant": "usask",
+        "ver": "wd5",
+    },
+    {
+        "name": "University of British Columbia",
+        "province": "British Columbia",
+        "type": "workday",
+        "tenant": "ubc",
+        "ver": "wd10",
+    },
+    {
+        "name": "Simon Fraser University",
+        "province": "British Columbia",
+        "type": "workday",
+        "tenant": "sfu",
+        "ver": "wd5",
+    },
+    {
+        "name": "Memorial University",
+        "province": "Newfoundland and Labrador",
+        "type": "workday",
+        "tenant": "mun",
+        "ver": "wd5",
+    },
+    {
+        "name": "Dalhousie University",
+        "province": "Nova Scotia",
+        "type": "workday",
+        "tenant": "dal",
+        "ver": "wd3",
+    },
+    # ── HTML careers pages ────────────────────────────────────────────────────
+    # These universities either don't use Workday or have accessible static listings.
+    {
+        "name": "University of Toronto",
+        "province": "Ontario",
+        "type": "html",
+        "urls": [
+            "https://jobs.utoronto.ca/faculty-and-librarians-staff",
+            "https://jobs.utoronto.ca/",
+        ],
+    },
+    {
+        "name": "University of Ottawa",
+        "province": "Ontario",
+        "type": "html",
+        "urls": [
+            "https://hr.uottawa.ca/en/careers",
+            "https://uottawa.njoyn.com/cl2/xweb/Xweb.asp?clid=57917&page=joblisting",
+        ],
+    },
+    {
+        "name": "University of Victoria",
+        "province": "British Columbia",
+        "type": "html",
+        "urls": [
+            "https://www.uvic.ca/hr/careers/",
+            "https://www.uvic.ca/hr/careers/faculty/index.php",
+        ],
+    },
+    {
+        "name": "McGill University",
+        "province": "Quebec",
+        "type": "html",
+        "urls": [
+            "https://www.mcgill.ca/hr/career/academic-staff-employment-opportunities",
+            "https://www.mcgill.ca/hr/career/",
+        ],
+    },
+    {
+        "name": "Concordia University",
+        "province": "Quebec",
+        "type": "html",
+        "urls": ["https://www.concordia.ca/hr/dept/talent-acquisition/careers.html"],
+    },
+    {
+        "name": "Toronto Metropolitan University",
+        "province": "Ontario",
+        "type": "html",
+        "urls": ["https://www.torontomu.ca/careers/faculty-positions/"],
+    },
+    {
+        "name": "Brock University",
+        "province": "Ontario",
+        "type": "html",
+        "urls": ["https://brocku.ca/human-resources/careers/faculty-positions/"],
+    },
+    {
+        "name": "University of New Brunswick",
+        "province": "New Brunswick",
+        "type": "html",
+        "urls": ["https://www.unb.ca/hr/careers/"],
+    },
+    {
+        "name": "University of Lethbridge",
+        "province": "Alberta",
+        "type": "html",
+        "urls": ["https://www.ulethbridge.ca/hr/jobs/academic"],
+    },
+    {
+        "name": "Wilfrid Laurier University",
+        "province": "Ontario",
+        "type": "html",
+        "urls": ["https://www.wlu.ca/careers/"],
+    },
+    {
+        "name": "University of Northern BC",
+        "province": "British Columbia",
+        "type": "html",
+        "urls": ["https://www.unbc.ca/people/human-resources/career-opportunities/faculty"],
+    },
+    {
+        "name": "Trent University",
+        "province": "Ontario",
+        "type": "html",
+        "urls": ["https://www.trentu.ca/hr/careers/"],
+    },
+]
+
+# Search terms used for Workday API and UA scraper
+SEARCH_TERMS = [
+    "neuroscience",
+    "anatomy",
+    "kinesiology",
+    "neuroanatomy",
+    "physiology lecturer",
+    "neuroscience professor",
+    "anatomy professor",
+    "kinesiology professor",
+]
+
+# ── Headers ───────────────────────────────────────────────────────────────────
 
 BROWSER_HEADERS = {
     "User-Agent": (
@@ -160,7 +344,6 @@ BROWSER_HEADERS = {
     "Accept-Language": "en-CA,en;q=0.9",
     "Accept-Encoding": "gzip, deflate, br",
     "Connection": "keep-alive",
-    "Referer": BASE_URL,
 }
 
 AJAX_HEADERS = {
@@ -170,78 +353,88 @@ AJAX_HEADERS = {
     "X-Requested-With": "XMLHttpRequest",
 }
 
+WORKDAY_HEADERS = {
+    **BROWSER_HEADERS,
+    "Accept": "application/json",
+    "Content-Type": "application/json",
+}
+
+# ── Helper functions ──────────────────────────────────────────────────────────
 
 def get_province(location_text: str) -> str:
-    """Detect Canadian province from a location string."""
     if not location_text:
         return "Unknown"
-
     text = location_text.strip()
-
-    # Try province abbreviation at end: "Toronto, ON" or "Toronto, ON, Canada"
-    abbrev_match = re.search(r'\b([A-Z]{2})\b', text)
-    if abbrev_match:
-        abbrev = abbrev_match.group(1)
-        if abbrev in PROVINCE_ABBREVS:
-            return PROVINCE_ABBREVS[abbrev]
-
-    # Try full province name in the text
+    # Province abbreviation: "Toronto, ON" or "ON, Canada"
+    for abbrev, name in PROVINCE_ABBREVS.items():
+        if re.search(rf'\b{abbrev}\b', text):
+            return name
     lower = text.lower()
     for full_name in PROVINCE_ABBREVS.values():
         if full_name.lower() in lower:
             return full_name
-
-    # Try city name lookup
     for city, province in CITY_TO_PROVINCE.items():
         if city in lower:
             return province
-
     return "Unknown"
 
 
 def score_match(title: str, description: str = "") -> str:
-    """Score a job as strong, partial, or none based on subject keywords."""
     text = (title + " " + description).lower()
-    for kw in STRONG_KEYWORDS:
-        if kw in text:
-            return "strong"
-    for kw in PARTIAL_KEYWORDS:
-        if kw in text:
-            return "partial"
+    if any(kw in text for kw in STRONG_KEYWORDS):
+        return "strong"
+    if any(kw in text for kw in PARTIAL_KEYWORDS):
+        return "partial"
     return "none"
 
 
 def is_relevant_position(title: str) -> bool:
-    """Return True if the job title suggests a teaching/faculty position."""
     lower = title.lower()
     return any(kw in lower for kw in POSITION_KEYWORDS)
 
 
-def parse_deadline(text: str) -> str | None:
-    """Try to extract a deadline date string from arbitrary text."""
+def parse_deadline(text: str):
     if not text:
         return None
-    # Common patterns: "January 15, 2026", "2026-01-15", "Jan 15, 2026"
     patterns = [
         r'\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}\b',
         r'\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\.?\s+\d{1,2},?\s+\d{4}\b',
         r'\b\d{4}-\d{2}-\d{2}\b',
-        r'\b\d{1,2}/\d{1,2}/\d{4}\b',
     ]
-    for pattern in patterns:
-        match = re.search(pattern, text, re.IGNORECASE)
-        if match:
-            return match.group(0).strip()
+    for pat in patterns:
+        m = re.search(pat, text, re.IGNORECASE)
+        if m:
+            return m.group(0).strip()
     return None
 
 
-# ── Scraping Logic ───────────────────────────────────────────────────────────
+def make_job(title, institution, location, province, url, source,
+             deadline=None, apply_url=None, date_posted=""):
+    return {
+        "title": title,
+        "institution": institution,
+        "location": location,
+        "province": province or get_province(location),
+        "deadline": deadline,
+        "url": url,
+        "apply_url": apply_url or url,
+        "match": score_match(title),
+        "source": source,
+        "date_posted": date_posted,
+    }
 
-def fetch_ua_ajax(session: requests.Session, keywords: str, page: int = 1) -> list[dict]:
-    """
-    Try University Affairs WP Job Manager AJAX endpoints.
-    Returns a list of raw job dicts parsed from the HTML response.
-    """
+
+# ── University Affairs (WP Job Manager AJAX) ──────────────────────────────────
+
+UA_BASE = "https://www.universityaffairs.ca"
+UA_AJAX_ENDPOINTS = [
+    f"{UA_BASE}/jm-ajax/get_listings/",
+    f"{UA_BASE}/wp-admin/admin-ajax.php",
+]
+UA_SEARCH_URL = f"{UA_BASE}/search-jobs/"
+
+
+def fetch_ua_ajax(session, keywords: str, page: int = 1) -> list:
     payload = {
         "search_keywords": keywords,
         "search_location": "",
@@ -251,323 +444,432 @@ def fetch_ua_ajax(session: requests.Session, keywords: str, page: int = 1) -> li
         "page": page,
         "show_pagination": "false",
     }
-
-    jobs = []
-
     for endpoint in UA_AJAX_ENDPOINTS:
-        # The admin-ajax endpoint needs action param
         if "admin-ajax" in endpoint:
             payload["action"] = "job_manager_get_listings"
-
         try:
-            print(f"  → Trying AJAX endpoint: {endpoint} [{keywords}]")
             resp = session.post(endpoint, data=payload, headers=AJAX_HEADERS, timeout=20)
-            print(f"     Status: {resp.status_code}")
-
             if resp.status_code != 200:
                 continue
-
             data = resp.json()
             html_fragment = data.get("html", "")
-
             if not html_fragment:
-                print("     Empty html in response")
                 continue
-
-            parsed = parse_listing_html(html_fragment)
-            print(f"     Parsed {len(parsed)} jobs from AJAX HTML")
-            jobs.extend(parsed)
-
-            # Handle pagination
+            jobs = parse_ua_html(html_fragment, "University Affairs")
+            # Paginate
             max_pages = int(data.get("max_num_pages", 1))
             if max_pages > 1 and page == 1:
-                for p in range(2, min(max_pages + 1, 6)):  # cap at 5 pages
+                for p in range(2, min(max_pages + 1, 6)):
                     time.sleep(1.5)
-                    jobs.extend(fetch_ua_ajax(session, keywords, page=p))
-
-            return jobs  # success, stop trying other endpoints
-
-        except (requests.RequestException, ValueError, KeyError) as e:
-            print(f"     Error: {e}")
-            continue
-
-    return jobs
+                    jobs += fetch_ua_ajax(session, keywords, page=p)
+            return jobs
+        except Exception as e:
+            print(f"     UA AJAX error ({endpoint}): {e}")
+    return []
 
 
-def fetch_ua_html_search(session: requests.Session, keywords: str) -> list[dict]:
-    """
-    Fallback: scrape the University Affairs HTML search results page directly.
-    """
-    params = {"search_keywords": keywords, "search_location": ""}
-    url = f"{UA_SEARCH_URL}?{urlencode(params)}"
-
+def fetch_ua_html_fallback(session, keywords: str) -> list:
+    url = f"{UA_SEARCH_URL}?{urlencode({'search_keywords': keywords})}"
     try:
-        print(f"  → HTML search fallback: {url}")
         resp = session.get(url, headers=BROWSER_HEADERS, timeout=20)
-        print(f"     Status: {resp.status_code}")
-
-        if resp.status_code != 200:
-            return []
-
-        return parse_listing_html(resp.text)
-
-    except requests.RequestException as e:
-        print(f"     Error: {e}")
-        return []
+        if resp.status_code == 200:
+            return parse_ua_html(resp.text, "University Affairs")
+    except Exception as e:
+        print(f"     UA HTML fallback error: {e}")
+    return []
 
 
-def parse_listing_html(html: str) -> list[dict]:
-    """
-    Parse job listings from WP Job Manager HTML (embedded in AJAX response or page).
-    Tries multiple selector patterns to handle different plugin versions.
-    """
+def parse_ua_html(html: str, source: str) -> list:
     soup = BeautifulSoup(html, "html.parser")
     jobs = []
 
-    # Pattern 1: Standard WP Job Manager <li class="job_listing">
-    listings = soup.select("li.job_listing, li.job-listing, .job_listing")
+    listings = (
+        soup.select("li.job_listing") or
+        soup.select("li.job-listing") or
+        soup.select(".job_listing") or
+        soup.select("article.job")
+    )
 
-    # Pattern 2: If no <li>, look for generic job cards
     if not listings:
-        listings = soup.select(".job-card, .job-item, article.job")
-
-    # Pattern 3: Any <a> with href containing "/job/"
-    if not listings:
-        links = soup.select('a[href*="/job/"], a[href*="job-preview"], a[href*="job_id="]')
-        for link in links:
-            job = extract_from_link(link)
-            if job:
-                jobs.append(job)
+        # Last resort: grab any link pointing to /job/ or job-preview
+        for link in soup.select('a[href*="/job/"], a[href*="job-preview"], a[href*="job_id="]'):
+            title = link.get_text(strip=True)
+            href = link.get("href", "")
+            if not href.startswith("http"):
+                href = urljoin(UA_BASE, href)
+            if title and is_relevant_position(title):
+                jobs.append(make_job(title, "", "", "Unknown", href, source))
         return jobs
 
     for item in listings:
-        job = {}
-
-        # Title
         title_el = (
-            item.select_one("h3") or
-            item.select_one(".job-title") or
-            item.select_one(".position h3") or
-            item.select_one("h2")
+            item.select_one("h3") or item.select_one(".job-title") or
+            item.select_one(".position h3") or item.select_one("h2")
         )
-        job["title"] = title_el.get_text(strip=True) if title_el else ""
+        title = title_el.get_text(strip=True) if title_el else ""
 
-        # URL (job detail page)
         link_el = item.select_one("a[href]")
-        job["url"] = link_el["href"] if link_el else ""
-        if job["url"] and not job["url"].startswith("http"):
-            job["url"] = urljoin(BASE_URL, job["url"])
+        url = link_el["href"] if link_el else ""
+        if url and not url.startswith("http"):
+            url = urljoin(UA_BASE, url)
 
-        # Institution
+        # Institution (strip nested location text)
         company_el = (
-            item.select_one(".company-name") or
-            item.select_one(".company") or
-            item.select_one(".employer") or
-            item.select_one("strong")
+            item.select_one(".company-name") or item.select_one(".company") or
+            item.select_one(".employer")
         )
-        # Remove nested location text from company
+        institution = ""
         if company_el:
-            company_clone = BeautifulSoup(str(company_el), "html.parser")
-            for loc in company_clone.select(".location, .meta"):
-                loc.decompose()
-            job["institution"] = company_clone.get_text(strip=True)
-        else:
-            job["institution"] = ""
+            clone = BeautifulSoup(str(company_el), "html.parser")
+            for el in clone.select(".location, .meta"):
+                el.decompose()
+            institution = clone.get_text(strip=True)
 
-        # Location
         loc_el = (
-            item.select_one(".location") or
-            item.select_one(".job-location") or
+            item.select_one(".location") or item.select_one(".job-location") or
             item.select_one("li.location")
         )
-        location_raw = loc_el.get_text(strip=True) if loc_el else ""
-        # Strip icon/bullet text
-        location_raw = re.sub(r'^[\W]+', '', location_raw).strip()
-        job["location"] = location_raw
-        job["province"] = get_province(location_raw)
+        location = re.sub(r'^[\W]+', '', loc_el.get_text(strip=True)).strip() if loc_el else ""
 
-        # Date posted / deadline (from listing snippet — full deadline on detail page)
-        date_el = item.select_one("time, .date-posted, .job-posted")
-        if date_el:
-            job["date_posted"] = date_el.get("datetime") or date_el.get_text(strip=True)
-        else:
-            job["date_posted"] = ""
+        if title:
+            jobs.append(make_job(title, institution, location,
+                                  get_province(location), url, source))
+    return jobs
 
-        job["deadline"] = None  # filled in by fetch_job_details()
 
-        if job["title"]:
-            jobs.append(job)
+# ── Workday API scraper ───────────────────────────────────────────────────────
+
+WORKDAY_VERSIONS = ["wd5", "wd10", "wd3", "wd1"]
+
+
+def fetch_workday(session, name: str, tenant: str, province: str, preferred_ver: str = "wd5") -> list:
+    """Search a Workday-based university career portal via its undocumented JSON API."""
+    versions_to_try = [preferred_ver] + [v for v in WORKDAY_VERSIONS if v != preferred_ver]
+    jobs = []
+
+    for ver in versions_to_try:
+        base = f"https://{tenant}.{ver}.myworkday.com"
+        search_url = f"{base}/wday/cxs/{tenant}/jobs/search"
+        headers = {
+            **WORKDAY_HEADERS,
+            "Origin": base,
+            "Referer": f"{base}/{tenant}/d/task/",
+        }
+
+        success = False
+        for term in SEARCH_TERMS:
+            payload = {
+                "appliedFacets": {},
+                "limit": 20,
+                "offset": 0,
+                "searchText": term,
+            }
+            try:
+                resp = session.post(search_url, json=payload, headers=headers, timeout=15)
+                if resp.status_code == 404:
+                    break  # wrong version, try next
+                if resp.status_code not in (200, 201):
+                    continue
+
+                data = resp.json()
+                postings = data.get("jobPostings", [])
+                success = True
+
+                for p in postings:
+                    title = p.get("title", "")
+                    if not title or not is_relevant_position(title):
+                        continue
+                    ext_path = p.get("externalPath", "")
+                    job_url = f"{base}{ext_path}" if ext_path else base
+                    location_text = p.get("locationsText", province)
+                    jobs.append(make_job(
+                        title=title,
+                        institution=name,
+                        location=location_text,
+                        province=get_province(location_text) or province,
+                        url=job_url,
+                        source=name,
+                        date_posted=p.get("postedOn", ""),
+                    ))
+
+                time.sleep(0.8)
+
+            except Exception as e:
+                print(f"     Workday {name} ({ver}, '{term}'): {e}")
+                continue
+
+        if success:
+            break  # found working version
+
+    if jobs:
+        print(f"  ✓ {name}: {len(jobs)} jobs via Workday")
+    else:
+        print(f"  ✗ {name}: Workday API unreachable or no results")
 
     return jobs
 
 
-def extract_from_link(link_el) -> dict | None:
-    """Extract minimal job info from a bare <a> tag (last-resort parser)."""
-    href = link_el.get("href", "")
-    if not href:
-        return None
-    if not href.startswith("http"):
-        href = urljoin(BASE_URL, href)
-    text = link_el.get_text(strip=True)
-    if not text:
-        return None
-    return {
-        "title": text,
-        "url": href,
-        "institution": "",
-        "location": "",
-        "province": "Unknown",
-        "date_posted": "",
-        "deadline": None,
-    }
+# ── HTML careers page scraper ─────────────────────────────────────────────────
+
+ALL_SUBJECT_KW = STRONG_KEYWORDS + PARTIAL_KEYWORDS
 
 
-def fetch_job_details(session: requests.Session, job: dict) -> dict:
-    """
-    Visit the individual job page to extract deadline and application URL.
-    """
+def fetch_html_careers(session, name: str, province: str, urls: list) -> list:
+    """Scrape a university careers page. Tries each URL in the list."""
+    for url in urls:
+        try:
+            resp = session.get(url, headers=BROWSER_HEADERS, timeout=20, allow_redirects=True)
+            if resp.status_code != 200:
+                continue
+
+            soup = BeautifulSoup(resp.text, "html.parser")
+            jobs = _parse_careers_html(soup, name, province, url, source=name)
+
+            if jobs:
+                print(f"  ✓ {name}: {len(jobs)} jobs via HTML ({url})")
+                return jobs
+
+        except Exception as e:
+            print(f"     HTML {name} ({url}): {e}")
+
+    print(f"  ✗ {name}: no results from HTML scrape")
+    return []
+
+
+def _parse_careers_html(soup, institution: str, province: str, base_url: str, source: str) -> list:
+    jobs = []
+    seen = set()
+
+    # Strategy 1: structured job list elements
+    for selector in [
+        ".job-listing", ".job_listing", ".job-item", ".posting",
+        "li.position", "tr.job", ".career-listing", ".opportunity",
+    ]:
+        items = soup.select(selector)
+        if not items:
+            continue
+        for item in items:
+            link = item.select_one("a[href]")
+            if not link:
+                continue
+            text = item.get_text(" ", strip=True)
+            href = link.get("href", "")
+            if not href.startswith("http"):
+                href = urljoin(base_url, href)
+            if href in seen:
+                continue
+            seen.add(href)
+            title = link.get_text(strip=True) or text[:120]
+            if is_relevant_position(title) or any(kw in title.lower() for kw in ALL_SUBJECT_KW):
+                jobs.append(make_job(title, institution, province, province, href, source))
+        if jobs:
+            return jobs
+
+    # Strategy 2: scan all links heuristically
+    for link in soup.select("a[href]"):
+        text = link.get_text(strip=True)
+        if not (10 <= len(text) <= 200):
+            continue
+        href = link.get("href", "")
+        if not href or href.startswith(("#", "mailto:", "tel:")):
+            continue
+
+        parent_text = (link.parent.get_text(" ", strip=True) if link.parent else "")
+        combined = (text + " " + parent_text).lower()
+
+        has_position = any(kw in combined for kw in POSITION_KEYWORDS)
+        has_subject = any(kw in combined for kw in ALL_SUBJECT_KW)
+
+        if has_position and has_subject:
+            if not href.startswith("http"):
+                href = urljoin(base_url, href)
+            if href in seen:
+                continue
+            seen.add(href)
+            jobs.append(make_job(text, institution, province, province, href, source))
+
+    return jobs
+
+
+# ── Job detail enrichment ─────────────────────────────────────────────────────
+
+def enrich_job(session, job: dict) -> dict:
+    """Visit the individual job page to extract deadline and confirm apply URL."""
     url = job.get("url", "")
-    if not url:
+    if not url or "myworkday.com" in url:
+        # Skip Workday detail pages (JS-rendered) and missing URLs
         return job
-
     try:
-        time.sleep(1.2)  # polite delay
+        time.sleep(1.0)
         resp = session.get(url, headers=BROWSER_HEADERS, timeout=20)
         if resp.status_code != 200:
             return job
 
         soup = BeautifulSoup(resp.text, "html.parser")
 
-        # Deadline — look for common patterns
+        # Deadline
         deadline_text = ""
-        for selector in [
-            ".job-deadline", ".deadline", "[class*='deadline']",
-            ".job_listing-meta .date", ".application-deadline",
-        ]:
-            el = soup.select_one(selector)
+        for sel in [".job-deadline", ".deadline", "[class*='deadline']",
+                    ".application-deadline", ".closing-date"]:
+            el = soup.select_one(sel)
             if el:
                 deadline_text = el.get_text(strip=True)
                 break
 
-        # If no specific element, scan meta table rows for "deadline" keyword
         if not deadline_text:
-            for row in soup.select("tr, li, p, div"):
-                text = row.get_text(strip=True).lower()
-                if "deadline" in text or "closing date" in text or "apply by" in text:
-                    deadline_text = row.get_text(strip=True)
+            for el in soup.select("tr, li, p, div"):
+                t = el.get_text(strip=True).lower()
+                if any(k in t for k in ("deadline", "closing date", "apply by", "review date")):
+                    deadline_text = el.get_text(strip=True)
                     break
 
-        job["deadline"] = parse_deadline(deadline_text) or deadline_text or None
+        parsed = parse_deadline(deadline_text)
+        if parsed:
+            job["deadline"] = parsed
 
-        # Application URL — look for "Apply" button or link
-        for selector in [
-            "a.apply-button", "a[class*='apply']", ".job-apply a",
-            "a[href*='apply']", ".application-link a",
-        ]:
-            apply_el = soup.select_one(selector)
-            if apply_el and apply_el.get("href"):
-                href = apply_el["href"]
+        # Apply URL
+        for sel in ["a.apply-button", "a[class*='apply']", ".job-apply a",
+                    "a[href*='apply']", ".application-link a"]:
+            el = soup.select_one(sel)
+            if el and el.get("href"):
+                href = el["href"]
                 if not href.startswith("http"):
-                    href = urljoin(BASE_URL, href)
+                    href = urljoin(url, href)
                 job["apply_url"] = href
                 break
 
-        # If no institution yet, try to extract from page
+        # Institution (if missing)
         if not job.get("institution"):
-            inst_el = soup.select_one(".company-name, .employer, h2.institution")
-            if inst_el:
-                job["institution"] = inst_el.get_text(strip=True)
-
-        # If no province yet, try location on detail page
-        if job.get("province") == "Unknown":
-            for selector in [".location", ".job-location", ".meta .location"]:
-                loc_el = soup.select_one(selector)
-                if loc_el:
-                    job["location"] = loc_el.get_text(strip=True)
-                    job["province"] = get_province(job["location"])
+            for sel in [".company-name", ".employer", "h2.institution"]:
+                el = soup.select_one(sel)
+                if el:
+                    job["institution"] = el.get_text(strip=True)
                     break
 
-    except requests.RequestException as e:
-        print(f"     Could not fetch detail page {url}: {e}")
-
+    except Exception as e:
+        print(f"     Enrichment failed ({url[:60]}): {e}")
     return job
 
 
-# ── Main ─────────────────────────────────────────────────────────────────────
+# ── Main ──────────────────────────────────────────────────────────────────────
 
 def main():
-    print(f"[{datetime.now(timezone.utc).isoformat()}] Starting scrape...")
+    print(f"\n[{datetime.now(timezone.utc).isoformat()}] Academic job scraper starting...\n")
 
     session = requests.Session()
     session.headers.update(BROWSER_HEADERS)
 
-    # Warm-up: visit main site first to get cookies / bypass simple bot checks
+    # Warm-up
     try:
-        print("Warming up session...")
-        session.get(BASE_URL, timeout=15)
-        time.sleep(2)
-    except Exception as e:
-        print(f"Warm-up failed (non-fatal): {e}")
+        session.get("https://www.universityaffairs.ca", timeout=15)
+        time.sleep(1.5)
+    except Exception:
+        pass
 
-    all_jobs_raw: list[dict] = []
+    all_jobs: list[dict] = []
     seen_urls: set[str] = set()
+    sources_checked: list[str] = []
+    sources_successful: list[str] = []
 
-    for keyword_group in SEARCH_KEYWORD_GROUPS:
-        print(f"\nSearching: '{keyword_group}'")
-
-        # Try AJAX endpoint first
-        jobs = fetch_ua_ajax(session, keyword_group)
-
-        # Fallback to HTML search if AJAX returns nothing
-        if not jobs:
-            jobs = fetch_ua_html_search(session, keyword_group)
-
-        print(f"  Found {len(jobs)} raw results")
-
-        for job in jobs:
+    def add_jobs(new_jobs: list, source_name: str):
+        added = 0
+        for job in new_jobs:
             url = job.get("url", "")
-            if url and url not in seen_urls:
-                seen_urls.add(url)
-                all_jobs_raw.append(job)
+            key = url or job.get("title", "") + job.get("institution", "")
+            if key and key not in seen_urls:
+                seen_urls.add(key)
+                all_jobs.append(job)
+                added += 1
+        if added:
+            sources_successful.append(source_name)
+        return added
 
-        time.sleep(2)  # polite delay between keyword groups
+    # ── 1. University Affairs ─────────────────────────────────────────────────
+    print("=" * 60)
+    print("SOURCE: University Affairs")
+    print("=" * 60)
+    sources_checked.append("University Affairs")
 
-    print(f"\nTotal unique raw jobs before filtering: {len(all_jobs_raw)}")
+    ua_total = 0
+    for term in SEARCH_TERMS:
+        print(f"\nSearching UA: '{term}'")
+        jobs = fetch_ua_ajax(session, term)
+        if not jobs:
+            jobs = fetch_ua_html_fallback(session, term)
+        count = add_jobs(jobs, "University Affairs")
+        ua_total += count
+        print(f"  → Added {count} new jobs")
+        time.sleep(2)
 
-    # Filter to relevant positions only
-    relevant = [
-        j for j in all_jobs_raw
-        if is_relevant_position(j.get("title", ""))
-    ]
-    print(f"After position-type filter: {len(relevant)}")
+    print(f"\nUniversity Affairs total: {ua_total} new unique jobs")
 
-    # Score and enrich each job
-    final_jobs = []
+    # ── 2. University-specific sources ────────────────────────────────────────
+    for uni in UNIVERSITY_SOURCES:
+        name = uni["name"]
+        province = uni["province"]
+        src_type = uni["type"]
+        sources_checked.append(name)
+
+        print(f"\n{'=' * 60}")
+        print(f"SOURCE: {name} [{src_type.upper()}]")
+        print(f"{'=' * 60}")
+
+        if src_type == "workday":
+            jobs = fetch_workday(
+                session, name, uni["tenant"], province,
+                preferred_ver=uni.get("ver", "wd5")
+            )
+        elif src_type == "html":
+            jobs = fetch_html_careers(session, name, province, uni["urls"])
+        else:
+            jobs = []
+
+        # Position-type filter (for HTML scrapers that return raw links)
+        if src_type == "html":
+            jobs = [j for j in jobs if is_relevant_position(j.get("title", ""))]
+
+        count = add_jobs(jobs, name)
+        print(f"  → Added {count} new unique jobs")
+        time.sleep(1.5)
+
+    # ── 3. Filter: only relevant matches (strong or partial) ──────────────────
+    print(f"\n{'=' * 60}")
+    print("FILTERING & ENRICHING")
+    print(f"{'=' * 60}")
+    print(f"Total raw jobs before match filter: {len(all_jobs)}")
+
+    relevant = [j for j in all_jobs if j.get("match") in ("strong", "partial")]
+    print(f"After match filter: {len(relevant)}")
+
+    # ── 4. Enrich (fetch deadlines from job detail pages) ─────────────────────
+    enriched = []
     for i, job in enumerate(relevant):
-        print(f"\nEnriching {i+1}/{len(relevant)}: {job.get('title', '')[:60]}")
-        job = fetch_job_details(session, job)
-        job["match"] = score_match(job.get("title", ""), "")
-        # Only include Canada positions (Unknown province is kept; filter out obvious non-Canada)
-        job.setdefault("apply_url", job.get("url", ""))
-        final_jobs.append(job)
+        print(f"Enriching {i+1}/{len(relevant)}: {job['title'][:55]}")
+        job = enrich_job(session, job)
+        enriched.append(job)
 
-    # Sort: strong matches first, then partial, then others; within each group by deadline
+    # ── 5. Sort: strong first, then by deadline ───────────────────────────────
     def sort_key(j):
-        match_order = {"strong": 0, "partial": 1, "none": 2}
-        return (match_order.get(j.get("match", "none"), 2), j.get("deadline") or "9999")
+        order = {"strong": 0, "partial": 1}
+        return (order.get(j.get("match"), 2), j.get("deadline") or "9999")
 
-    final_jobs.sort(key=sort_key)
+    enriched.sort(key=sort_key)
 
+    # ── 6. Write output ───────────────────────────────────────────────────────
     output = {
         "last_updated": datetime.now(timezone.utc).isoformat(),
-        "jobs": final_jobs,
+        "sources_checked": len(sources_checked),
+        "sources_successful": len(set(sources_successful)),
+        "source_names": sources_checked,
+        "jobs": enriched,
     }
 
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         json.dump(output, f, indent=2, ensure_ascii=False)
 
-    print(f"\nWrote {len(final_jobs)} jobs to {OUTPUT_FILE}")
-    print(f"Scrape complete at {output['last_updated']}")
+    print(f"\n✅ Wrote {len(enriched)} jobs to {OUTPUT_FILE}")
+    print(f"   Sources checked: {len(sources_checked)} | Successful: {len(set(sources_successful))}")
+    print(f"   Completed at: {output['last_updated']}")
 
 
 if __name__ == "__main__":
