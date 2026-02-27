@@ -311,12 +311,51 @@ def get_province(location_text: str) -> str:
     return "Unknown"
 
 
+# Fields clearly unrelated to neuroscience / kinesiology / anatomy.
+# Any job whose title contains one of these gets score "none" regardless.
+NEGATIVE_TITLE_KEYWORDS = [
+    "mining", "petroleum", "geological engineering", "geotechnical",
+    "mechanical engineering", "electrical engineering", "civil engineering",
+    "chemical engineering", "nuclear engineering", "materials engineering",
+    "accounting", "finance", "taxation", "auditing",
+    "law school", "legal studies", "jurisprudence", "criminology",
+    "dentistry", "dental hygiene", "veterinary",
+    "agriculture", "agronomy", "horticulture",
+    "music", "fine art", "theatre", "dance performance",
+]
+
+
 def score_match(title: str, description: str = "") -> str:
-    text = (title + " " + description).lower()
-    if any(kw in text for kw in STRONG_KEYWORDS):
+    """
+    Score relevance of a job to the target profile (neuroscience / kinesiology / anatomy).
+
+    Rules:
+    - Any negative field keyword in the title → "none" (hard exclude)
+    - Subject keyword in the TITLE → strong or partial (high confidence)
+    - Subject keyword only in description (fetched page content) → one step lower
+      (strong→partial, partial→partial) — search terms must NOT be passed as
+      description; only pass actual fetched job-page text
+    """
+    title_lower = title.lower()
+
+    # Hard exclusion: obviously irrelevant field in title
+    if any(kw in title_lower for kw in NEGATIVE_TITLE_KEYWORDS):
+        return "none"
+
+    # Primary scoring from title
+    if any(kw in title_lower for kw in STRONG_KEYWORDS):
         return "strong"
-    if any(kw in text for kw in PARTIAL_KEYWORDS):
+    if any(kw in title_lower for kw in PARTIAL_KEYWORDS):
         return "partial"
+
+    # Secondary: subject keyword in fetched description (not search term)
+    if description:
+        desc_lower = description.lower()
+        if any(kw in desc_lower for kw in STRONG_KEYWORDS):
+            return "partial"   # downgrade: we can't see it in the title
+        if any(kw in desc_lower for kw in PARTIAL_KEYWORDS):
+            return "partial"
+
     return "none"
 
 
