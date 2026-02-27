@@ -1117,6 +1117,225 @@ def fetch_higheredjobs_rss(session) -> list:
     return jobs
 
 
+# ── Shared HTML job-listing parser ────────────────────────────────────────────
+
+# Selectors tried in order across different job board platforms
+_JOB_BLOCK_SELECTORS = [
+    "article.job-result", "article.job", "article.vacancy", "article.listing",
+    "li.job-result", "li.job", "li.listing", "li.vacancy",
+    ".job-listing", ".job-card", ".vacancy-item", ".position-item",
+    "[class*='job-result']", "[class*='job-listing']", "[class*='job-card']",
+    "tr.job", ".search-result-item",
+]
+_TITLE_SELECTORS   = ["h2", "h3", "h4", ".job-title", ".title", ".position-title"]
+_INST_SELECTORS    = [".employer", ".company", ".institution", ".organization",
+                      ".company-name", "[class*='employer']", "[class*='company']"]
+_LOC_SELECTORS     = [".location", ".job-location", ".city", "[class*='location']"]
+
+
+def _parse_aggregator_html(soup: BeautifulSoup, base_url: str, source: str,
+                            province: str = "",
+                            category_hint: str = "") -> list:
+    """
+    Parse an aggregator search-results page.
+
+    category_hint: discipline already known from the URL (e.g. "kinesiology").
+        When set, jobs only need to pass is_relevant_position(); the category
+        guarantees subject relevance and is used as description in score_match.
+    When empty, the job title must itself contain a subject keyword.
+    """
+    jobs = []
+    seen: set[str] = set()
+
+    for sel in _JOB_BLOCK_SELECTORS:
+        items = soup.select(sel)
+        if not items:
+            continue
+        for item in items:
+            title_el = next((item.select_one(s) for s in _TITLE_SELECTORS
+                             if item.select_one(s)), None)
+            title = title_el.get_text(strip=True) if title_el else ""
+            if not title:
+                # Fall back: first link text
+                a = item.select_one("a[href]")
+                title = a.get_text(strip=True) if a else ""
+            if not title or len(title) < 8:
+                continue
+
+            link = item.select_one("a[href]")
+            href = link["href"] if link else ""
+            if not href:
+                continue
+            if not href.startswith("http"):
+                href = urljoin(base_url, href)
+            if href in seen:
+                continue
+
+            inst_el = next((item.select_one(s) for s in _INST_SELECTORS
+                            if item.select_one(s)), None)
+            institution = inst_el.get_text(strip=True) if inst_el else ""
+
+            loc_el = next((item.select_one(s) for s in _LOC_SELECTORS
+                           if item.select_one(s)), None)
+            location = loc_el.get_text(strip=True) if loc_el else (province or "Canada")
+
+            if not is_relevant_position(title):
+                continue
+            if score_match(title, category_hint) == "none":
+                continue
+
+            seen.add(href)
+            jobs.append(make_job(
+                title=title, institution=institution,
+                location=location,
+                province=get_province(location) or province or "Unknown",
+                url=href, source=source,
+                description=category_hint,
+            ))
+        if jobs:
+            return jobs
+
+    # Fallback: scan all <a> tags — but ONLY keep those whose text contains a
+    # subject keyword in the title (never use category_hint here to avoid
+    # false positives like the mining-job bug).
+    for link in soup.select("a[href]"):
+        title = link.get_text(strip=True)
+        if not title or len(title) < 10 or len(title) > 200:
+            continue
+        href = link.get("href", "")
+        if not href or href.startswith(("#", "mailto:", "tel:")):
+            continue
+        if not href.startswith("http"):
+            href = urljoin(base_url, href)
+        if href in seen:
+            continue
+        if not is_relevant_position(title):
+            continue
+        if score_match(title) == "none":   # title-only check, no category hint
+            continue
+        seen.add(href)
+        parent_text = link.parent.get_text(" ", strip=True) if link.parent else ""
+        location = province or "Canada"
+        jobs.append(make_job(
+            title=title, institution="",
+            location=location,
+            province=get_province(parent_text) or province or "Unknown",
+            url=href, source=source,
+        ))
+    return jobs
+
+
+# ── Chronicle of Higher Education Jobs ────────────────────────────────────────
+# Server-side rendered (confirmed). URL pattern: /jobs/[category]/canada/
+# Discipline slugs confirmed from live site.
+
+CHRONICLE_PAGES = [
+    ("https://jobs.chronicle.com/jobs/kinesiology-exercise-physiology-and-physical-education/canada/",
+     "kinesiology"),
+    ("https://jobs.chronicle.com/jobs/neuroscience-cognitive-science-and-neurology/canada/",
+     "neuroscience"),
+    ("https://jobs.chronicle.com/jobs/anatomy-and-physiology/canada/",
+     "anatomy"),
+    ("https://jobs.chronicle.com/jobs/sports-medicine-and-physical-therapy/canada/",
+     "physiology"),
+]
+
+
+def fetch_chronicle(session) -> list:
+    """Scrape Chronicle of Higher Ed Canada faculty listings by discipline."""
+    jobs = []
+    seen: set[str] = set()
+
+    for page_url, category in CHRONICLE_PAGES:
+        try:
+            resp = session.get(page_url, headers=BROWSER_HEADERS, timeout=20)
+            print(f"  → Chronicle [{category}]: HTTP {resp.status_code} ({len(resp.content)} bytes)")
+            if resp.status_code != 200:
+                continue
+
+            soup = BeautifulSoup(resp.text, "html.parser")
+            for tag in soup.select("nav, header, footer, script, style"):
+                tag.decompose()
+
+            page_jobs = _parse_aggregator_html(soup, page_url,
+                                               "Chronicle of Higher Ed",
+                                               province="",
+                                               category_hint=category)
+            added = 0
+            for job in page_jobs:
+                if job["url"] not in seen:
+                    seen.add(job["url"])
+                    jobs.append(job)
+                    added += 1
+            print(f"  → Chronicle [{category}]: {added} new jobs")
+            time.sleep(1.5)
+
+        except Exception as e:
+            print(f"     Chronicle ({page_url}): {e}")
+
+    if jobs:
+        print(f"  ✓ Chronicle: {len(jobs)} relevant jobs total")
+    else:
+        print("  ✗ Chronicle: 0 jobs found")
+    return jobs
+
+
+# ── Academic Careers (academiccareers.com) ────────────────────────────────────
+# Server-side rendered. Canada jobs at /countries/jobs-in-canada/
+# Also supports keyword search and discipline categories.
+
+ACADEMICCAREERS_PAGES = [
+    ("https://academiccareers.com/browse-jobs?q=kinesiology&country=Canada",    "kinesiology"),
+    ("https://academiccareers.com/browse-jobs?q=neuroscience&country=Canada",   "neuroscience"),
+    ("https://academiccareers.com/browse-jobs?q=anatomy&country=Canada",        "anatomy"),
+    ("https://academiccareers.com/browse-jobs?q=physiology&country=Canada",     "physiology"),
+    ("https://academiccareers.com/countries/jobs-in-canada/",                   ""),
+]
+
+
+def fetch_academiccareers(session) -> list:
+    """Scrape Academic Careers Canada job listings."""
+    jobs = []
+    seen: set[str] = set()
+
+    for page_url, category in ACADEMICCAREERS_PAGES:
+        try:
+            resp = session.get(page_url, headers=BROWSER_HEADERS, timeout=20)
+            print(f"  → AcademicCareers [{category or 'all-CA'}]: HTTP {resp.status_code} ({len(resp.content)} bytes)")
+            if resp.status_code != 200:
+                continue
+
+            soup = BeautifulSoup(resp.text, "html.parser")
+            for tag in soup.select("nav, header, footer, script, style"):
+                tag.decompose()
+
+            page_jobs = _parse_aggregator_html(soup, page_url,
+                                               "Academic Careers",
+                                               province="",
+                                               category_hint=category)
+            # Filter to Canadian jobs (site may include non-CA results)
+            page_jobs = [j for j in page_jobs if _is_canadian(
+                j.get("location", "") + " " + j.get("institution", "")
+            ) or category]  # keyword-search pages are CA-filtered by param
+            added = 0
+            for job in page_jobs:
+                if job["url"] not in seen:
+                    seen.add(job["url"])
+                    jobs.append(job)
+                    added += 1
+            print(f"  → AcademicCareers [{category or 'all-CA'}]: {added} new jobs")
+            time.sleep(1.5)
+
+        except Exception as e:
+            print(f"     AcademicCareers ({page_url}): {e}")
+
+    if jobs:
+        print(f"  ✓ AcademicCareers: {len(jobs)} relevant jobs total")
+    else:
+        print("  ✗ AcademicCareers: 0 jobs found")
+    return jobs
+
+
 # ── HTML careers page scraper ─────────────────────────────────────────────────
 
 ALL_SUBJECT_KW = STRONG_KEYWORDS + PARTIAL_KEYWORDS
@@ -1385,6 +1604,26 @@ def main():
             print(f"  '{term}': +{added}")
         time.sleep(1.5)
     print(f"CAUT total: {caut_total} new unique jobs")
+
+    # ── 1e. Chronicle of Higher Education ─────────────────────────────────────
+    print("\n" + "=" * 60)
+    print("SOURCE: Chronicle of Higher Education Jobs (jobs.chronicle.com)")
+    print("=" * 60)
+    sources_checked.append("Chronicle of Higher Ed")
+    chronicle_jobs = fetch_chronicle(session)
+    chronicle_total = add_jobs(chronicle_jobs, "Chronicle of Higher Ed")
+    print(f"Chronicle total: {chronicle_total} new unique jobs")
+    time.sleep(1.5)
+
+    # ── 1f. Academic Careers ──────────────────────────────────────────────────
+    print("\n" + "=" * 60)
+    print("SOURCE: Academic Careers (academiccareers.com)")
+    print("=" * 60)
+    sources_checked.append("Academic Careers")
+    ac_jobs = fetch_academiccareers(session)
+    ac_total = add_jobs(ac_jobs, "Academic Careers")
+    print(f"Academic Careers total: {ac_total} new unique jobs")
+    time.sleep(1.5)
 
     # ── 2. University-specific sources ────────────────────────────────────────
     for uni in UNIVERSITY_SOURCES:
