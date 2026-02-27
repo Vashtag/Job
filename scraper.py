@@ -823,6 +823,138 @@ def fetch_workday_jobs_site(session, name: str, tenant: str, career_site: str,
     return jobs
 
 
+# ── CSBBCS job board scraper ──────────────────────────────────────────────────
+# csbbcs.org (Canadian Society for Brain, Behaviour & Cognitive Science)
+# maintains curated lists of Canadian neuroscience / cognitive science faculty
+# positions. Pages are simple HTML — no JS rendering, no auth needed.
+# Confirmed positions: StFX Neuroscience TT, Queen's Neuroscience Director,
+# Cape Breton Behavioural Neuroscience LTA.
+
+CSBBCS_PAGES = [
+    ("https://www.csbbcs.org/jobs/tenure-track-positions", "Tenure-Track"),
+    ("https://www.csbbcs.org/jobs/term-positions",         "Term"),
+    ("https://www.csbbcs.org/jobs/crc",                    "CRC"),
+]
+
+
+def fetch_csbbcs(session) -> list:
+    """
+    Scrape CSBBCS job board pages.
+
+    Page structure: each posting is a block of text (usually a <p> or <div>)
+    containing the institution name, position description, and a link to the
+    actual posting URL at the university or UA. We extract:
+      - the external link as the apply URL
+      - surrounding paragraph text as the job description / title source
+      - institution name from "University of …" / "Université …" patterns
+    """
+    jobs = []
+    seen_urls: set[str] = set()
+
+    for page_url, category in CSBBCS_PAGES:
+        try:
+            resp = session.get(page_url, headers=BROWSER_HEADERS, timeout=20)
+            print(f"  → CSBBCS {category}: HTTP {resp.status_code} ({len(resp.content)} bytes)")
+            if resp.status_code != 200:
+                continue
+
+            soup = BeautifulSoup(resp.text, "html.parser")
+            # Remove nav / footer / header noise
+            for tag in soup.select("nav, header, footer, .navigation, .menu"):
+                tag.decompose()
+
+            # Each job entry is typically a paragraph or div containing an
+            # outbound link to the full posting. Walk every block-level element.
+            for block in soup.select("p, li, div.job, div.posting, article"):
+                block_text = block.get_text(" ", strip=True)
+                # Must look like a job announcement
+                if not any(kw in block_text.lower() for kw in
+                           ("applications", "position", "professor", "lecturer",
+                            "instructor", "faculty", "chair")):
+                    continue
+                if len(block_text) < 40:
+                    continue
+
+                # Find outbound link (to the actual job posting)
+                job_url = ""
+                for a in block.select("a[href]"):
+                    href = a.get("href", "")
+                    if href.startswith("http") and "csbbcs.org" not in href:
+                        job_url = href
+                        break
+                # If no outbound link, use the CSBBCS page itself as reference
+                if not job_url:
+                    # Check parent for a link
+                    parent = block.parent
+                    for a in (parent.select("a[href]") if parent else []):
+                        href = a.get("href", "")
+                        if href.startswith("http") and "csbbcs.org" not in href:
+                            job_url = href
+                            break
+                if not job_url:
+                    job_url = page_url  # fallback: CSBBCS page itself
+
+                if job_url in seen_urls and job_url != page_url:
+                    continue
+
+                # Extract institution name
+                institution = ""
+                inst_match = re.search(
+                    r'\b((?:University|Université|Collège|College|NOSM|École)\s+(?:of\s+)?[\w\s\-\']+?)(?:\s+(?:invites|is|seeks|Department))',
+                    block_text, re.IGNORECASE
+                )
+                if inst_match:
+                    institution = inst_match.group(1).strip()
+
+                # Derive a concise title: first sentence up to 120 chars,
+                # or try to find "rank of X" pattern
+                title = ""
+                rank_match = re.search(
+                    r'\b((?:Assistant|Associate|Full|Adjunct|Clinical|Visiting|Adjunct|Tier\s+\d)\s+'
+                    r'Professor(?:\s*,\s*Teaching\s+Stream)?'
+                    r'|Lecturer|Instructor|Research\s+Chair|Canada\s+Research\s+Chair)',
+                    block_text, re.IGNORECASE
+                )
+                subject_match = re.search(
+                    r'(?:in|of|area of|expertise in)\s+([\w\s,/&\(\)-]{3,60}?)(?:\.|,|\band\b|$)',
+                    block_text, re.IGNORECASE
+                )
+                if rank_match:
+                    rank = rank_match.group(1).strip()
+                    subject = subject_match.group(1).strip() if subject_match else ""
+                    title = f"{rank}{', ' + subject if subject else ''}"
+                    if institution:
+                        title = f"{title} — {institution}"
+                else:
+                    # Fall back to first meaningful sentence
+                    title = block_text[:120].split(".")[0].strip()
+
+                if not title or len(title) < 10:
+                    continue
+
+                # Score against both title and block text (real content, not search term)
+                match = score_match(title, block_text)
+                if match == "none":
+                    continue
+
+                province = get_province(block_text)
+                seen_urls.add(job_url)
+                jobs.append(make_job(
+                    title=title, institution=institution, location="Canada",
+                    province=province or "Unknown", url=job_url,
+                    source="CSBBCS", description=block_text,
+                ))
+
+        except Exception as e:
+            print(f"     CSBBCS ({page_url}): {e}")
+
+    if jobs:
+        print(f"  ✓ CSBBCS: {len(jobs)} relevant jobs")
+    else:
+        print("  ✗ CSBBCS: 0 relevant jobs found")
+    return jobs
+
+
 # ── CAUT Academic Work scraper ────────────────────────────────────────────────
 # academicwork.ca is CAUT's Canadian academic job board (caut.ca).
 # Jobs are indexed with clean slug URLs. We try the search page + sitemap.
@@ -1109,7 +1241,18 @@ def main():
 
     print(f"\nUniversity Affairs total: {ua_total} new unique jobs")
 
-    # ── 1b. CAUT Academic Work ────────────────────────────────────────────────
+    # ── 1b. CSBBCS job board ──────────────────────────────────────────────────
+    print("\n" + "=" * 60)
+    print("SOURCE: CSBBCS (csbbcs.org — Canadian neuroscience job board)")
+    print("=" * 60)
+    sources_checked.append("CSBBCS")
+    csbbcs_jobs = fetch_csbbcs(session)
+    csbbcs_jobs = [j for j in csbbcs_jobs if is_relevant_position(j.get("title", ""))]
+    csbbcs_total = add_jobs(csbbcs_jobs, "CSBBCS")
+    print(f"CSBBCS total: {csbbcs_total} new unique jobs")
+    time.sleep(1.5)
+
+    # ── 1c. CAUT Academic Work ────────────────────────────────────────────────
     print("\n" + "=" * 60)
     print("SOURCE: CAUT Academic Work (academicwork.ca)")
     print("=" * 60)
