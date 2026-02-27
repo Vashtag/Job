@@ -341,7 +341,7 @@ def parse_deadline(text: str):
 
 
 def make_job(title, institution, location, province, url, source,
-             deadline=None, apply_url=None, date_posted=""):
+             deadline=None, apply_url=None, date_posted="", description=""):
     return {
         "title": title,
         "institution": institution,
@@ -350,7 +350,7 @@ def make_job(title, institution, location, province, url, source,
         "deadline": deadline,
         "url": url,
         "apply_url": apply_url or url,
-        "match": score_match(title),
+        "match": score_match(title, description),
         "source": source,
         "date_posted": date_posted,
     }
@@ -462,9 +462,14 @@ def fetch_ua_rss(session) -> list:
 def fetch_ua_wp_rest(session, keyword: str) -> list:
     """
     Try WordPress REST API for University Affairs job_listing post type.
+    Tries WP Job Manager v1 REST API first, then generic WP REST API.
     This bypasses the JS-rendered frontend entirely.
     """
-    url = f"{UA_BASE}/wp-json/wp/v2/job_listing"
+    # WP Job Manager v2.x exposes a dedicated REST namespace
+    rest_endpoints = [
+        f"{UA_BASE}/wp-json/wpjm/v1/jobs",
+        f"{UA_BASE}/wp-json/wp/v2/job_listing",
+    ]
     params = {
         "search": keyword,
         "per_page": 100,
@@ -472,38 +477,55 @@ def fetch_ua_wp_rest(session, keyword: str) -> list:
         "_fields": "id,title,link,meta,excerpt",
     }
     jobs = []
-    try:
-        resp = session.get(url, params=params, headers=BROWSER_HEADERS, timeout=20)
-        if resp.status_code not in (200, 201):
-            return []
-        data = resp.json()
-        if not isinstance(data, list):
-            return []
-        for item in data:
-            raw_title = item.get("title", {})
-            title = BeautifulSoup(
-                raw_title.get("rendered", "") if isinstance(raw_title, dict) else str(raw_title),
-                "html.parser"
-            ).get_text(strip=True)
-            link = item.get("link", "")
-            meta = item.get("meta", {})
-            # WP Job Manager meta fields
-            def _meta(key):
-                v = meta.get(key, "")
-                if isinstance(v, list):
-                    return v[0] if v else ""
-                return str(v)
-            institution = _meta("_company_name")
-            location    = _meta("_job_location")
-            deadline_raw = _meta("_job_expires") or _meta("_application_deadline")
-            if title:
-                jobs.append(make_job(
-                    title=title, institution=institution, location=location,
-                    province=get_province(location), url=link,
-                    source="University Affairs", deadline=parse_deadline(deadline_raw),
-                ))
-    except Exception as e:
-        print(f"     UA WP REST ('{keyword}'): {e}")
+    url = None
+    data = None
+    for endpoint in rest_endpoints:
+        try:
+            resp = session.get(endpoint, params=params, headers=BROWSER_HEADERS, timeout=20)
+            if resp.status_code not in (200, 201):
+                continue
+            result = resp.json()
+            # WPJM v1 returns {"jobs": [...]} or {"results": [...]}
+            if isinstance(result, dict):
+                data = result.get("jobs") or result.get("results") or []
+            elif isinstance(result, list):
+                data = result
+            else:
+                continue
+            if data:
+                url = endpoint
+                print(f"  → UA WP REST: {len(data)} results from {endpoint}")
+                break
+        except Exception as e:
+            print(f"     UA WP REST ({endpoint}): {e}")
+
+    if not data:
+        return []
+
+    def _meta(meta, key):
+        v = meta.get(key, "")
+        if isinstance(v, list):
+            return v[0] if v else ""
+        return str(v)
+
+    for item in data:
+        raw_title = item.get("title", {})
+        title = BeautifulSoup(
+            raw_title.get("rendered", "") if isinstance(raw_title, dict) else str(raw_title),
+            "html.parser"
+        ).get_text(strip=True)
+        link = item.get("link", "") or item.get("url", "")
+        meta = item.get("meta", {})
+        institution = _meta(meta, "_company_name") or item.get("company", {}).get("name", "")
+        location    = _meta(meta, "_job_location") or item.get("location", "")
+        deadline_raw = _meta(meta, "_job_expires") or _meta(meta, "_application_deadline")
+        if title:
+            jobs.append(make_job(
+                title=title, institution=institution, location=location,
+                province=get_province(location), url=link,
+                source="University Affairs", deadline=parse_deadline(deadline_raw),
+                description=keyword,
+            ))
     return jobs
 
 
@@ -740,6 +762,9 @@ def fetch_workday_jobs_site(session, name: str, tenant: str, career_site: str,
                     title=title, institution=name, location=loc,
                     province=get_province(loc) or province,
                     url=job_url, source=name, date_posted=p.get("postedOn", ""),
+                    # Pass search term as description so score_match uses it
+                    # (Workday searches full job text; keyword may not appear in title)
+                    description=term,
                 ))
             time.sleep(0.8)
 
