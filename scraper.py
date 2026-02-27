@@ -196,10 +196,13 @@ UNIVERSITY_SOURCES = [
     {"name": "Trent University", "province": "Ontario", "type": "html",
      "urls": ["https://www.trentu.ca/hr/careers/"]},
 
-    # NOSM University (Northern Ontario School of Medicine)
+    # NOSM University — try multiple known URL patterns for their job listings
     {"name": "NOSM University", "province": "Ontario", "type": "html",
-     "urls": ["https://www.nosm.ca/about/administrative-offices/human-resources/work-at-nosm/",
-              "https://www.nosm.ca/about/administrative-offices/human-resources/work-at-nosm/career-opportunity/"]},
+     "urls": [
+         "https://www.nosm.ca/about/administrative-offices/human-resources/work-at-nosm/career-opportunity/",
+         "https://www.nosm.ca/about/administrative-offices/human-resources/work-at-nosm/",
+         "https://www.nosm.ca/about/administrative-offices/human-resources/",
+     ]},
 
     # University of Alberta uses Oracle Cloud HCM (not Workday)
     {"name": "University of Alberta", "province": "Alberta", "type": "html",
@@ -1010,6 +1013,110 @@ def fetch_caut(session, term: str) -> list:
     return jobs
 
 
+# ── HigherEdJobs RSS scraper ──────────────────────────────────────────────────
+# HigherEdJobs publishes RSS feeds per discipline — plain XML, no JS needed.
+# Confirmed: NOSM Human Anatomy Lecturer is in JobCat=288.
+# Feeds include worldwide jobs; we filter to Canadian institutions in code.
+
+HEJ_RSS_FEEDS = [
+    ("https://www.higheredjobs.com/search/rss.cfm?JobCat=288", "Human Anatomy & Physiology"),
+    ("https://www.higheredjobs.com/search/rss.cfm?JobCat=105", "Kinesiology / Exercise Science"),
+    ("https://www.higheredjobs.com/search/rss.cfm?JobCat=289", "Neuroscience"),
+]
+
+# Strings that appear in Canadian job descriptions / titles
+_CA_INDICATORS = (
+    list(PROVINCE_ABBREVS.values()) +
+    list(PROVINCE_ABBREVS.keys()) +
+    ["Canada", "Ontario", "British Columbia", "Alberta", "Quebec",
+     "NOSM", "Laurier", "Dalhousie", "Memorial University",
+     "Nipissing", "Algoma", "Lakehead", "Cape Breton", "StFX",
+     "St. Francis Xavier", "Acadia", "Mount Allison", "UPEI"]
+)
+
+
+def _is_canadian(text: str) -> bool:
+    lower = text.lower()
+    if any(ind.lower() in lower for ind in _CA_INDICATORS):
+        return True
+    # Province abbreviation at end of location "(City, ON)" style
+    return bool(re.search(r'\b(ON|BC|QC|AB|SK|MB|NS|NB|NL|PE|NT|YT|NU)\b', text))
+
+
+def fetch_higheredjobs_rss(session) -> list:
+    """Fetch HigherEdJobs RSS feeds for relevant disciplines, keep Canadian jobs."""
+    jobs = []
+    seen_urls: set[str] = set()
+
+    for feed_url, category in HEJ_RSS_FEEDS:
+        try:
+            resp = session.get(feed_url, headers=BROWSER_HEADERS, timeout=25)
+            print(f"  → HEJ RSS [{category}]: HTTP {resp.status_code} ({len(resp.content)} bytes)")
+            if resp.status_code != 200:
+                continue
+
+            text = resp.text.strip()
+            if "<rss" not in text[:500] and "<?xml" not in text[:50]:
+                print(f"     HEJ [{category}]: response is not XML")
+                continue
+
+            root = ET.fromstring(text)
+            items = root.findall(".//item")
+            print(f"  → HEJ [{category}]: {len(items)} items total")
+
+            ca_count = 0
+            for item in items:
+                title = item.findtext("title", "").strip()
+                link  = item.findtext("link",  "").strip()
+                desc  = item.findtext("description", "").strip()
+
+                if not title or not link or link in seen_urls:
+                    continue
+
+                combined = title + " " + desc
+                if not _is_canadian(combined):
+                    continue
+                if not is_relevant_position(title):
+                    continue
+
+                match = score_match(title, desc)
+                if match == "none":
+                    continue
+
+                # Strip HTML tags from description
+                desc_text = BeautifulSoup(desc, "html.parser").get_text(" ", strip=True)
+                province = get_province(combined)
+
+                # Extract institution from description (typically first line)
+                institution = ""
+                inst_m = re.search(
+                    r'\b((?:University|Université|College|NOSM|École)\s+(?:of\s+)?[\w\s\-\']+?)(?:\s+(?:is|invites|seeks|Department|\())',
+                    desc_text, re.IGNORECASE
+                )
+                if inst_m:
+                    institution = inst_m.group(1).strip()
+
+                seen_urls.add(link)
+                ca_count += 1
+                jobs.append(make_job(
+                    title=title, institution=institution,
+                    location=province or "Canada",
+                    province=province or "Unknown",
+                    url=link, source="HigherEdJobs",
+                    description=desc_text,
+                ))
+
+            print(f"  → HEJ [{category}]: {ca_count} Canadian matches kept")
+            time.sleep(1)
+
+        except Exception as e:
+            print(f"     HEJ RSS [{category}]: {e}")
+
+    if jobs:
+        print(f"  ✓ HigherEdJobs: {len(jobs)} relevant Canadian jobs total")
+    return jobs
+
+
 # ── HTML careers page scraper ─────────────────────────────────────────────────
 
 ALL_SUBJECT_KW = STRONG_KEYWORDS + PARTIAL_KEYWORDS
@@ -1252,7 +1359,17 @@ def main():
     print(f"CSBBCS total: {csbbcs_total} new unique jobs")
     time.sleep(1.5)
 
-    # ── 1c. CAUT Academic Work ────────────────────────────────────────────────
+    # ── 1c. HigherEdJobs RSS ──────────────────────────────────────────────────
+    print("\n" + "=" * 60)
+    print("SOURCE: HigherEdJobs RSS (anatomy / kinesiology / neuroscience)")
+    print("=" * 60)
+    sources_checked.append("HigherEdJobs")
+    hej_jobs = fetch_higheredjobs_rss(session)
+    hej_total = add_jobs(hej_jobs, "HigherEdJobs")
+    print(f"HigherEdJobs total: {hej_total} new unique jobs")
+    time.sleep(1.5)
+
+    # ── 1d. CAUT Academic Work ────────────────────────────────────────────────
     print("\n" + "=" * 60)
     print("SOURCE: CAUT Academic Work (academicwork.ca)")
     print("=" * 60)
