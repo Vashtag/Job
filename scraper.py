@@ -869,24 +869,10 @@ def fetch_caut(session, term: str) -> list:
                 if jobs:
                     return jobs
 
-        # Fallback: scan all links pointing to /jobs/
-        seen = set()
-        for link in soup.select('a[href*="/jobs/"]'):
-            title = link.get_text(strip=True)
-            href = link.get("href", "")
-            if not href.startswith("http"):
-                href = urljoin(CAUT_BASE, href)
-            if not title or href in seen or len(title) < 10:
-                continue
-            # Skip nav/footer links that just say "Jobs" or similar
-            if len(title) > 150 or title.lower() in ("jobs", "view jobs", "all jobs"):
-                continue
-            seen.add(href)
-            jobs.append(make_job(
-                title=title, institution="", location="Canada",
-                province="Unknown", url=href,
-                source="CAUT Academic Work", description=term,
-            ))
+        # No structured selectors matched — page is likely JS-rendered.
+        # Do NOT fall back to scanning all /jobs/ links: that grabs every job
+        # on the page regardless of whether it matched the search term.
+        print(f"  → CAUT '{term}': no structured job elements found (JS-rendered?)")
     except Exception as e:
         print(f"     CAUT '{term}': {e}")
     return jobs
