@@ -1,9 +1,10 @@
 {
-  "last_updated": "2026-02-27T12:41:39.265185+00:00",
-  "sources_checked": 30,
-  "sources_successful": 0,
+  "last_updated": "2026-02-27T17:39:25.403069+00:00",
+  "sources_checked": 31,
+  "sources_successful": 1,
   "source_names": [
     "University Affairs",
+    "CAUT Academic Work",
     "University of British Columbia",
     "University of Waterloo",
     "McGill University",
@@ -34,5 +35,18 @@
     "Concordia University",
     "University of New Brunswick"
   ],
-  "jobs": []
+  "jobs": [
+    {
+      "title": "Tenure-Track Faculty Position in Surface and Underground Mining (Teaching-Focused)",
+      "institution": "",
+      "location": "Canada",
+      "province": "Unknown",
+      "deadline": "July 1, 2026",
+      "url": "https://www.academicwork.ca/jobs/tenure-track-faculty-position-in-surface-and-underground-mining-teaching-focused-queen-s-university",
+      "apply_url": "https://apply.smithengineering.queensu.ca/123958",
+      "match": "strong",
+      "source": "CAUT Academic Work",
+      "date_posted": ""
+    }
+  ]
 }
