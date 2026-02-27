@@ -1015,6 +1015,17 @@ def enrich_job(session, job: dict) -> dict:
                     job["institution"] = el.get_text(strip=True)
                     break
 
+        # Rescore using full page text — rescues jobs where the subject keyword
+        # appears in the description but not the title (e.g. Workday API results
+        # where only the title was available at scrape time).
+        # Only upgrade, never downgrade: a title-based "strong" stays "strong".
+        if job.get("match") == "none":
+            page_text = soup.get_text(" ", strip=True)
+            rescored = score_match(job.get("title", ""), page_text)
+            if rescored != "none":
+                job["match"] = rescored
+                print(f"     ↑ rescored to '{rescored}' from page text: {job['title'][:60]}")
+
     except Exception as e:
         print(f"     Enrichment failed ({url[:60]}): {e}")
     return job
@@ -1149,16 +1160,30 @@ def main():
         print(f"  → Added {count} new unique jobs")
         time.sleep(1.5)
 
-    # ── 3. Filter: only relevant matches (strong or partial) ──────────────────
+    # ── 3. Pre-enrich Workday title-only jobs so rescoring can promote them ────
+    # Workday API returns only the job title — the subject keyword may only
+    # appear in the full posting. Fetch those pages first, then rescore.
     print(f"\n{'=' * 60}")
     print("FILTERING & ENRICHING")
     print(f"{'=' * 60}")
     print(f"Total raw jobs before match filter: {len(all_jobs)}")
 
+    ua_sources = {"University Affairs", "CAUT Academic Work"}
+    workday_unscored = [
+        j for j in all_jobs
+        if j.get("match") == "none"
+        and j.get("source") not in ua_sources
+        and is_relevant_position(j.get("title", ""))
+    ]
+    if workday_unscored:
+        print(f"Pre-enriching {len(workday_unscored)} Workday jobs for rescore...")
+        for job in workday_unscored:
+            enrich_job(session, job)   # modifies job dict in-place; may set match
+
     relevant = [j for j in all_jobs if j.get("match") in ("strong", "partial")]
     print(f"After match filter: {len(relevant)}")
 
-    # ── 4. Enrich (fetch deadlines from job detail pages) ─────────────────────
+    # ── 4. Enrich remaining relevant jobs (deadline / apply URL / institution) ─
     enriched = []
     for i, job in enumerate(relevant):
         print(f"Enriching {i+1}/{len(relevant)}: {job['title'][:55]}")
