@@ -387,6 +387,36 @@ UA_AJAX_ENDPOINTS = [
 UA_SEARCH_URL = f"{UA_BASE}/search-jobs/"
 
 
+def fetch_ua_nonce(session) -> str:
+    """
+    WP Job Manager AJAX requires a security nonce embedded in the page.
+    Without it the endpoint silently returns empty results.
+    Fetch the search page and extract the nonce.
+    """
+    try:
+        resp = session.get(UA_SEARCH_URL, headers=BROWSER_HEADERS, timeout=20)
+        if resp.status_code != 200:
+            return ""
+        text = resp.text
+        # WP Job Manager embeds nonce in various ways:
+        for pat in [
+            r'"nonce"\s*:\s*"([a-f0-9]+)"',
+            r'"ajax_nonce"\s*:\s*"([a-f0-9]+)"',
+            r'job_manager_nonce["\s:=]+["\']([a-f0-9]+)["\']',
+            r'security["\s:=]+["\']([a-f0-9]+)["\']',
+            r'wpjm_nonce["\s:=]+["\']([a-f0-9]+)["\']',
+        ]:
+            m = re.search(pat, text, re.IGNORECASE)
+            if m:
+                nonce = m.group(1)
+                print(f"  → UA nonce found: {nonce[:8]}…")
+                return nonce
+        print("  → UA nonce not found in page (will try without)")
+    except Exception as e:
+        print(f"     UA nonce fetch: {e}")
+    return ""
+
+
 def fetch_ua_rss(session) -> list:
     """
     Try University Affairs RSS feeds.
@@ -498,7 +528,7 @@ def fetch_ua_wp_rest(session, keyword: str) -> list:
     return jobs
 
 
-def fetch_ua_ajax(session, keywords: str, page: int = 1) -> list:
+def fetch_ua_ajax(session, keywords: str, page: int = 1, nonce: str = "") -> list:
     payload = {
         "search_keywords": keywords,
         "search_location": "",
@@ -508,6 +538,8 @@ def fetch_ua_ajax(session, keywords: str, page: int = 1) -> list:
         "page": page,
         "show_pagination": "false",
     }
+    if nonce:
+        payload["security"] = nonce
     for endpoint in UA_AJAX_ENDPOINTS:
         if "admin-ajax" in endpoint:
             payload["action"] = "job_manager_get_listings"
@@ -525,7 +557,7 @@ def fetch_ua_ajax(session, keywords: str, page: int = 1) -> list:
             if max_pages > 1 and page == 1:
                 for p in range(2, min(max_pages + 1, 6)):
                     time.sleep(1.5)
-                    jobs += fetch_ua_ajax(session, keywords, page=p)
+                    jobs += fetch_ua_ajax(session, keywords, page=p, nonce=nonce)
             return jobs
         except Exception as e:
             print(f"     UA AJAX error ({endpoint}): {e}")
@@ -920,6 +952,12 @@ def main():
     ua_total = 0
 
     # Approach 1: RSS feed (most reliable — no JS needed)
+    # Fetch nonce once — required for WP Job Manager AJAX to return results
+    print("\nFetching UA security nonce...")
+    ua_nonce = fetch_ua_nonce(session)
+    time.sleep(1)
+
+    # Approach 1: RSS feed (no JS, no nonce needed)
     print("\nTrying UA RSS feed...")
     rss_jobs = fetch_ua_rss(session)
     ua_total += add_jobs(rss_jobs, "University Affairs")
@@ -935,11 +973,11 @@ def main():
         ua_total += added
         time.sleep(1)
 
-    # Approach 3: WP Job Manager AJAX (original method, now tertiary)
+    # Approach 3: WP Job Manager AJAX with nonce
     print("\nTrying UA AJAX endpoints...")
     for term in SEARCH_TERMS:
         print(f"\nSearching UA AJAX: '{term}'")
-        jobs = fetch_ua_ajax(session, term)
+        jobs = fetch_ua_ajax(session, term, nonce=ua_nonce)
         if not jobs:
             jobs = fetch_ua_html_fallback(session, term)
         count = add_jobs(jobs, "University Affairs")
