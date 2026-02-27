@@ -125,164 +125,143 @@ CITY_TO_PROVINCE = {
 }
 
 # ── University sources ────────────────────────────────────────────────────────
-# type "workday"      → myworkday.com tenant API
 # type "workday_jobs" → myworkdayjobs.com career site API (confirmed from real URLs)
 # type "html"         → HTML careers page scraping
+# Note: myworkday.com entries removed — tenant names were guessed and DNS-invalid.
+# All confirmed portals use myworkdayjobs.com.
 
 UNIVERSITY_SOURCES = [
-    # ── myworkday.com Workday portals ─────────────────────────────────────────
-    {"name": "McMaster University",          "province": "Ontario",
-     "type": "workday", "tenant": "mcmaster",        "ver": "wd5"},
-    {"name": "Western University",           "province": "Ontario",
-     "type": "workday", "tenant": "uwo",              "ver": "wd3"},
-    {"name": "University of Waterloo",       "province": "Ontario",
-     "type": "workday", "tenant": "uwaterloo",        "ver": "wd3"},
-    {"name": "Queen's University",           "province": "Ontario",
-     "type": "workday", "tenant": "queensu",          "ver": "wd5"},
-    {"name": "Carleton University",          "province": "Ontario",
-     "type": "workday", "tenant": "carleton",         "ver": "wd5"},
-    {"name": "York University",              "province": "Ontario",
-     "type": "workday", "tenant": "yorkuniversity",   "ver": "wd5"},
-    {"name": "University of Guelph",         "province": "Ontario",
-     "type": "workday", "tenant": "uguelph",          "ver": "wd5"},
-    {"name": "University of Calgary",        "province": "Alberta",
-     "type": "workday", "tenant": "ucalgary",         "ver": "wd5"},
-    {"name": "University of Alberta",        "province": "Alberta",
-     "type": "workday", "tenant": "ualberta",         "ver": "wd5"},
-    {"name": "University of Manitoba",       "province": "Manitoba",
-     "type": "workday", "tenant": "umanitoba",        "ver": "wd5"},
-    {"name": "University of Saskatchewan",   "province": "Saskatchewan",
-     "type": "workday", "tenant": "usask",            "ver": "wd5"},
-    {"name": "University of British Columbia","province": "British Columbia",
-     "type": "workday", "tenant": "ubc",              "ver": "wd10"},
-    {"name": "Simon Fraser University",      "province": "British Columbia",
-     "type": "workday", "tenant": "sfu",              "ver": "wd5"},
-    {"name": "Memorial University",          "province": "Newfoundland and Labrador",
-     "type": "workday", "tenant": "mun",              "ver": "wd5"},
-    {"name": "Dalhousie University",         "province": "Nova Scotia",
-     "type": "workday", "tenant": "dal",              "ver": "wd3"},
+    # ── myworkdayjobs.com portals — CONFIRMED from real job URLs ─────────────
 
-    # ── myworkdayjobs.com career portals (confirmed from real job URLs) ────────
-    # Brock: https://brocku.wd3.myworkdayjobs.com/brocku_careers/job/...
-    {
-        "name": "Brock University",
-        "province": "Ontario",
-        "type": "workday_jobs",
-        "tenant": "brocku",
-        "career_site": "brocku_careers",
-        "ver": "wd3",
-    },
+    # UBC: https://ubc.wd10.myworkdayjobs.com/ubcfacultyjobs
+    {"name": "University of British Columbia", "province": "British Columbia",
+     "type": "workday_jobs", "tenant": "ubc", "career_site": "ubcfacultyjobs", "ver": "wd10"},
+
+    # Waterloo: https://uwaterloo.wd3.myworkdayjobs.com/uw_careers
+    {"name": "University of Waterloo", "province": "Ontario",
+     "type": "workday_jobs", "tenant": "uwaterloo", "career_site": "uw_careers", "ver": "wd3"},
+
+    # McGill: https://mcgill.wd3.myworkdayjobs.com/McGill_Careers
+    {"name": "McGill University", "province": "Quebec",
+     "type": "workday_jobs", "tenant": "mcgill", "career_site": "McGill_Careers", "ver": "wd3"},
+
+    # Ottawa: https://uottawa.wd3.myworkdayjobs.com/uOttawa_External_Career_Site
+    {"name": "University of Ottawa", "province": "Ontario",
+     "type": "workday_jobs", "tenant": "uottawa",
+     "career_site": "uOttawa_External_Career_Site", "ver": "wd3"},
+
+    # Brock: https://brocku.wd3.myworkdayjobs.com/brocku_careers
+    {"name": "Brock University", "province": "Ontario",
+     "type": "workday_jobs", "tenant": "brocku", "career_site": "brocku_careers", "ver": "wd3"},
 
     # ── HTML careers pages ────────────────────────────────────────────────────
-    # NOSM: confirmed career listing page
-    {
-        "name": "NOSM University",
-        "province": "Ontario",
-        "type": "html",
-        "urls": [
-            "https://www.nosm.ca/about/administrative-offices/human-resources/work-at-nosm/",
-            "https://www.nosm.ca/about/administrative-offices/human-resources/work-at-nosm/career-opportunity/",
-        ],
-    },
-    {
-        "name": "University of Toronto",
-        "province": "Ontario",
-        "type": "html",
-        "urls": [
-            "https://jobs.utoronto.ca/faculty-and-librarians-staff",
-            "https://jobs.utoronto.ca/",
-        ],
-    },
-    {
-        "name": "University of Ottawa",
-        "province": "Ontario",
-        "type": "html",
-        "urls": ["https://hr.uottawa.ca/en/careers"],
-    },
-    {
-        "name": "University of Victoria",
-        "province": "British Columbia",
-        "type": "html",
-        "urls": [
-            "https://www.uvic.ca/hr/careers/",
-            "https://www.uvic.ca/hr/careers/faculty/index.php",
-        ],
-    },
-    # UBC Faculty of Education posts jobs as standalone pages
-    {
-        "name": "UBC Faculty of Education",
-        "province": "British Columbia",
-        "type": "html",
-        "urls": [
-            "https://educ.ubc.ca/faculty-staff/jobs-at-educ/",
-            "https://educ.ubc.ca/about/jobs/",
-        ],
-    },
-    {
-        "name": "McGill University",
-        "province": "Quebec",
-        "type": "html",
-        "urls": [
-            "https://www.mcgill.ca/hr/career/academic-staff-employment-opportunities",
-            "https://www.mcgill.ca/hr/career/",
-        ],
-    },
-    {
-        "name": "Concordia University",
-        "province": "Quebec",
-        "type": "html",
-        "urls": ["https://www.concordia.ca/hr/dept/talent-acquisition/careers.html"],
-    },
-    {
-        "name": "Toronto Metropolitan University",
-        "province": "Ontario",
-        "type": "html",
-        "urls": ["https://www.torontomu.ca/careers/faculty-positions/"],
-    },
-    {
-        "name": "University of New Brunswick",
-        "province": "New Brunswick",
-        "type": "html",
-        "urls": ["https://www.unb.ca/hr/careers/"],
-    },
-    {
-        "name": "University of Lethbridge",
-        "province": "Alberta",
-        "type": "html",
-        "urls": ["https://www.ulethbridge.ca/hr/jobs/academic"],
-    },
-    {
-        "name": "Wilfrid Laurier University",
-        "province": "Ontario",
-        "type": "html",
-        "urls": ["https://www.wlu.ca/careers/"],
-    },
-    {
-        "name": "University of Northern BC",
-        "province": "British Columbia",
-        "type": "html",
-        "urls": ["https://www.unbc.ca/people/human-resources/career-opportunities/faculty"],
-    },
-    {
-        "name": "Trent University",
-        "province": "Ontario",
-        "type": "html",
-        "urls": ["https://www.trentu.ca/hr/careers/"],
-    },
+
+    # McMaster uses PeopleSoft (not Workday)
+    {"name": "McMaster University", "province": "Ontario", "type": "html",
+     "urls": ["https://careers.mcmaster.ca/",
+              "https://careers.mcmaster.ca/job-search-results/?category=Academic%20/%20Faculty"]},
+
+    # Western uses PeopleSoft at recruit.uwo.ca (not Workday)
+    {"name": "Western University", "province": "Ontario", "type": "html",
+     "urls": ["https://recruit.uwo.ca/hr/jobs_available.htm",
+              "https://uwo.ca/hr/working/faculty/index.html"]},
+
+    {"name": "Queen's University", "province": "Ontario", "type": "html",
+     "urls": ["https://careers.queensu.ca/",
+              "https://www.queensu.ca/humanresources/apply-jobs"]},
+
+    {"name": "Carleton University", "province": "Ontario", "type": "html",
+     "urls": ["https://carleton.ca/hr/careers/",
+              "https://carleton.ca/hr/careers/faculty-positions/"]},
+
+    # York uses Technomedia ATS (not Workday)
+    {"name": "York University", "province": "Ontario", "type": "html",
+     "urls": ["https://hr.yorku.ca/careers/",
+              "https://jobs-ca.technomedia.com/yorkuniversity/"]},
+
+    {"name": "University of Guelph", "province": "Ontario", "type": "html",
+     "urls": ["https://careers.uoguelph.ca/",
+              "https://www.uoguelph.ca/hr/jobs"]},
+
+    {"name": "University of Toronto", "province": "Ontario", "type": "html",
+     "urls": ["https://jobs.utoronto.ca/faculty-and-librarians-staff",
+              "https://jobs.utoronto.ca/"]},
+
+    {"name": "Toronto Metropolitan University", "province": "Ontario", "type": "html",
+     "urls": ["https://www.torontomu.ca/careers/faculty-positions/"]},
+
+    {"name": "Wilfrid Laurier University", "province": "Ontario", "type": "html",
+     "urls": ["https://www.wlu.ca/careers/"]},
+
+    {"name": "Trent University", "province": "Ontario", "type": "html",
+     "urls": ["https://www.trentu.ca/hr/careers/"]},
+
+    # NOSM University (Northern Ontario School of Medicine)
+    {"name": "NOSM University", "province": "Ontario", "type": "html",
+     "urls": ["https://www.nosm.ca/about/administrative-offices/human-resources/work-at-nosm/",
+              "https://www.nosm.ca/about/administrative-offices/human-resources/work-at-nosm/career-opportunity/"]},
+
+    # University of Alberta uses Oracle Cloud HCM (not Workday)
+    {"name": "University of Alberta", "province": "Alberta", "type": "html",
+     "urls": ["https://www.ualberta.ca/en/careers.html",
+              "https://www.ualberta.ca/en/human-resources/hr-for-prospective-employees/faculty-positions.html"]},
+
+    {"name": "University of Calgary", "province": "Alberta", "type": "html",
+     "urls": ["https://www.ucalgary.ca/careers",
+              "https://ucalgary.ca/hr/careers/academic"]},
+
+    {"name": "University of Lethbridge", "province": "Alberta", "type": "html",
+     "urls": ["https://www.ulethbridge.ca/hr/jobs/academic"]},
+
+    # University of Manitoba uses own portal (not Workday)
+    {"name": "University of Manitoba", "province": "Manitoba", "type": "html",
+     "urls": ["https://umanitoba.ca/careers/"]},
+
+    {"name": "University of Saskatchewan", "province": "Saskatchewan", "type": "html",
+     "urls": ["https://careers.usask.ca/",
+              "https://careers.usask.ca/job-search-results/?category=Faculty"]},
+
+    # UBC Faculty of Education (separate from main UBC Workday portal)
+    {"name": "UBC Faculty of Education", "province": "British Columbia", "type": "html",
+     "urls": ["https://educ.ubc.ca/faculty-staff/jobs-at-educ/",
+              "https://educ.ubc.ca/about/jobs/"]},
+
+    # Simon Fraser uses own HR portal (not Workday)
+    {"name": "Simon Fraser University", "province": "British Columbia", "type": "html",
+     "urls": ["https://www.sfu.ca/human-resources/join-SFU.html",
+              "https://www.sfu.ca/human-resources/careers.html"]},
+
+    {"name": "University of Victoria", "province": "British Columbia", "type": "html",
+     "urls": ["https://www.uvic.ca/hr/careers/",
+              "https://www.uvic.ca/hr/careers/faculty/index.php"]},
+
+    {"name": "University of Northern BC", "province": "British Columbia", "type": "html",
+     "urls": ["https://www.unbc.ca/people/human-resources/career-opportunities/faculty"]},
+
+    # Memorial uses own portal (not Workday)
+    {"name": "Memorial University", "province": "Newfoundland and Labrador", "type": "html",
+     "urls": ["https://www.mun.ca/hr/careers/"]},
+
+    {"name": "Dalhousie University", "province": "Nova Scotia", "type": "html",
+     "urls": ["https://dal.ca/dept/hr/careers.html"]},
+
+    {"name": "Concordia University", "province": "Quebec", "type": "html",
+     "urls": ["https://www.concordia.ca/hr/dept/talent-acquisition/careers.html"]},
+
+    {"name": "University of New Brunswick", "province": "New Brunswick", "type": "html",
+     "urls": ["https://www.unb.ca/hr/careers/"]},
 ]
 
-# Search terms used for Workday API and UA scraper
+# Search terms used for Workday API and UA scraper.
+# Keep short — each term = one API call per university.
 SEARCH_TERMS = [
     "neuroscience",
     "anatomy",
     "kinesiology",
     "neuroanatomy",
-    "physiology lecturer",
-    "neuroscience professor",
-    "anatomy professor",
-    "kinesiology professor",
-    "physical education lecturer",
-    "health sciences lecturer",
+    "physiology",
+    "physical education",
+    "health sciences",
 ]
 
 # ── Headers ───────────────────────────────────────────────────────────────────
@@ -385,6 +364,36 @@ UA_AJAX_ENDPOINTS = [
     f"{UA_BASE}/wp-admin/admin-ajax.php",
 ]
 UA_SEARCH_URL = f"{UA_BASE}/search-jobs/"
+
+
+def fetch_ua_nonce(session) -> str:
+    """
+    WP Job Manager AJAX requires a security nonce embedded in the page.
+    Without it the endpoint silently returns empty results.
+    Fetch the search page and extract the nonce.
+    """
+    try:
+        resp = session.get(UA_SEARCH_URL, headers=BROWSER_HEADERS, timeout=20)
+        if resp.status_code != 200:
+            return ""
+        text = resp.text
+        # WP Job Manager embeds nonce in various ways:
+        for pat in [
+            r'"nonce"\s*:\s*"([a-f0-9]+)"',
+            r'"ajax_nonce"\s*:\s*"([a-f0-9]+)"',
+            r'job_manager_nonce["\s:=]+["\']([a-f0-9]+)["\']',
+            r'security["\s:=]+["\']([a-f0-9]+)["\']',
+            r'wpjm_nonce["\s:=]+["\']([a-f0-9]+)["\']',
+        ]:
+            m = re.search(pat, text, re.IGNORECASE)
+            if m:
+                nonce = m.group(1)
+                print(f"  → UA nonce found: {nonce[:8]}…")
+                return nonce
+        print("  → UA nonce not found in page (will try without)")
+    except Exception as e:
+        print(f"     UA nonce fetch: {e}")
+    return ""
 
 
 def fetch_ua_rss(session) -> list:
@@ -498,7 +507,7 @@ def fetch_ua_wp_rest(session, keyword: str) -> list:
     return jobs
 
 
-def fetch_ua_ajax(session, keywords: str, page: int = 1) -> list:
+def fetch_ua_ajax(session, keywords: str, page: int = 1, nonce: str = "") -> list:
     payload = {
         "search_keywords": keywords,
         "search_location": "",
@@ -508,6 +517,8 @@ def fetch_ua_ajax(session, keywords: str, page: int = 1) -> list:
         "page": page,
         "show_pagination": "false",
     }
+    if nonce:
+        payload["security"] = nonce
     for endpoint in UA_AJAX_ENDPOINTS:
         if "admin-ajax" in endpoint:
             payload["action"] = "job_manager_get_listings"
@@ -525,7 +536,7 @@ def fetch_ua_ajax(session, keywords: str, page: int = 1) -> list:
             if max_pages > 1 and page == 1:
                 for p in range(2, min(max_pages + 1, 6)):
                     time.sleep(1.5)
-                    jobs += fetch_ua_ajax(session, keywords, page=p)
+                    jobs += fetch_ua_ajax(session, keywords, page=p, nonce=nonce)
             return jobs
         except Exception as e:
             print(f"     UA AJAX error ({endpoint}): {e}")
@@ -621,6 +632,7 @@ def fetch_workday(session, name: str, tenant: str, province: str, preferred_ver:
         }
 
         success = False
+        dns_failed = False
         for term in SEARCH_TERMS:
             payload = {
                 "appliedFacets": {},
@@ -629,7 +641,7 @@ def fetch_workday(session, name: str, tenant: str, province: str, preferred_ver:
                 "searchText": term,
             }
             try:
-                resp = session.post(search_url, json=payload, headers=headers, timeout=15)
+                resp = session.post(search_url, json=payload, headers=headers, timeout=10)
                 if resp.status_code == 404:
                     break  # wrong version, try next
                 if resp.status_code not in (200, 201):
@@ -659,9 +671,17 @@ def fetch_workday(session, name: str, tenant: str, province: str, preferred_ver:
                 time.sleep(0.8)
 
             except Exception as e:
+                err = str(e)
+                if "NameResolutionError" in err or "Name or service not known" in err:
+                    # DNS failed → tenant subdomain doesn't exist, skip all versions
+                    print(f"  ✗ {name}: tenant '{tenant}' not found in DNS — skipping")
+                    dns_failed = True
+                    break
                 print(f"     Workday {name} ({ver}, '{term}'): {e}")
                 continue
 
+        if dns_failed:
+            break  # No point trying other versions
         if success:
             break  # found working version
 
@@ -724,6 +744,10 @@ def fetch_workday_jobs_site(session, name: str, tenant: str, career_site: str,
             time.sleep(0.8)
 
         except Exception as e:
+            err = str(e)
+            if "NameResolutionError" in err or "Name or service not known" in err:
+                print(f"  ✗ {name}: tenant '{tenant}' not found in DNS — skipping")
+                break
             print(f"     Workday Jobs {name} ('{term}'): {e}")
 
     if jobs:
@@ -920,6 +944,12 @@ def main():
     ua_total = 0
 
     # Approach 1: RSS feed (most reliable — no JS needed)
+    # Fetch nonce once — required for WP Job Manager AJAX to return results
+    print("\nFetching UA security nonce...")
+    ua_nonce = fetch_ua_nonce(session)
+    time.sleep(1)
+
+    # Approach 1: RSS feed (no JS, no nonce needed)
     print("\nTrying UA RSS feed...")
     rss_jobs = fetch_ua_rss(session)
     ua_total += add_jobs(rss_jobs, "University Affairs")
@@ -935,11 +965,11 @@ def main():
         ua_total += added
         time.sleep(1)
 
-    # Approach 3: WP Job Manager AJAX (original method, now tertiary)
+    # Approach 3: WP Job Manager AJAX with nonce
     print("\nTrying UA AJAX endpoints...")
     for term in SEARCH_TERMS:
         print(f"\nSearching UA AJAX: '{term}'")
-        jobs = fetch_ua_ajax(session, term)
+        jobs = fetch_ua_ajax(session, term, nonce=ua_nonce)
         if not jobs:
             jobs = fetch_ua_html_fallback(session, term)
         count = add_jobs(jobs, "University Affairs")
