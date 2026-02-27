@@ -311,12 +311,51 @@ def get_province(location_text: str) -> str:
     return "Unknown"
 
 
+# Fields clearly unrelated to neuroscience / kinesiology / anatomy.
+# Any job whose title contains one of these gets score "none" regardless.
+NEGATIVE_TITLE_KEYWORDS = [
+    "mining", "petroleum", "geological engineering", "geotechnical",
+    "mechanical engineering", "electrical engineering", "civil engineering",
+    "chemical engineering", "nuclear engineering", "materials engineering",
+    "accounting", "finance", "taxation", "auditing",
+    "law school", "legal studies", "jurisprudence", "criminology",
+    "dentistry", "dental hygiene", "veterinary",
+    "agriculture", "agronomy", "horticulture",
+    "music", "fine art", "theatre", "dance performance",
+]
+
+
 def score_match(title: str, description: str = "") -> str:
-    text = (title + " " + description).lower()
-    if any(kw in text for kw in STRONG_KEYWORDS):
+    """
+    Score relevance of a job to the target profile (neuroscience / kinesiology / anatomy).
+
+    Rules:
+    - Any negative field keyword in the title → "none" (hard exclude)
+    - Subject keyword in the TITLE → strong or partial (high confidence)
+    - Subject keyword only in description (fetched page content) → one step lower
+      (strong→partial, partial→partial) — search terms must NOT be passed as
+      description; only pass actual fetched job-page text
+    """
+    title_lower = title.lower()
+
+    # Hard exclusion: obviously irrelevant field in title
+    if any(kw in title_lower for kw in NEGATIVE_TITLE_KEYWORDS):
+        return "none"
+
+    # Primary scoring from title
+    if any(kw in title_lower for kw in STRONG_KEYWORDS):
         return "strong"
-    if any(kw in text for kw in PARTIAL_KEYWORDS):
+    if any(kw in title_lower for kw in PARTIAL_KEYWORDS):
         return "partial"
+
+    # Secondary: subject keyword in fetched description (not search term)
+    if description:
+        desc_lower = description.lower()
+        if any(kw in desc_lower for kw in STRONG_KEYWORDS):
+            return "partial"   # downgrade: we can't see it in the title
+        if any(kw in desc_lower for kw in PARTIAL_KEYWORDS):
+            return "partial"
+
     return "none"
 
 
@@ -526,7 +565,6 @@ def fetch_ua_wp_rest(session, keyword: str) -> list:
                 title=title, institution=institution, location=location,
                 province=get_province(location), url=link,
                 source="University Affairs", deadline=parse_deadline(deadline_raw),
-                description=keyword,
             ))
     return jobs
 
@@ -765,9 +803,6 @@ def fetch_workday_jobs_site(session, name: str, tenant: str, career_site: str,
                     title=title, institution=name, location=loc,
                     province=get_province(loc) or province,
                     url=job_url, source=name, date_posted=p.get("postedOn", ""),
-                    # Pass search term as description so score_match uses it
-                    # (Workday searches full job text; keyword may not appear in title)
-                    description=term,
                 ))
             time.sleep(0.8)
 
@@ -829,29 +864,15 @@ def fetch_caut(session, term: str) -> list:
                     jobs.append(make_job(
                         title=title, institution=institution, location=location,
                         province=get_province(location), url=href,
-                        source="CAUT Academic Work", description=term,
+                        source="CAUT Academic Work",
                     ))
                 if jobs:
                     return jobs
 
-        # Fallback: scan all links pointing to /jobs/
-        seen = set()
-        for link in soup.select('a[href*="/jobs/"]'):
-            title = link.get_text(strip=True)
-            href = link.get("href", "")
-            if not href.startswith("http"):
-                href = urljoin(CAUT_BASE, href)
-            if not title or href in seen or len(title) < 10:
-                continue
-            # Skip nav/footer links that just say "Jobs" or similar
-            if len(title) > 150 or title.lower() in ("jobs", "view jobs", "all jobs"):
-                continue
-            seen.add(href)
-            jobs.append(make_job(
-                title=title, institution="", location="Canada",
-                province="Unknown", url=href,
-                source="CAUT Academic Work", description=term,
-            ))
+        # No structured selectors matched — page is likely JS-rendered.
+        # Do NOT fall back to scanning all /jobs/ links: that grabs every job
+        # on the page regardless of whether it matched the search term.
+        print(f"  → CAUT '{term}': no structured job elements found (JS-rendered?)")
     except Exception as e:
         print(f"     CAUT '{term}': {e}")
     return jobs
@@ -994,6 +1015,17 @@ def enrich_job(session, job: dict) -> dict:
                     job["institution"] = el.get_text(strip=True)
                     break
 
+        # Rescore using full page text — rescues jobs where the subject keyword
+        # appears in the description but not the title (e.g. Workday API results
+        # where only the title was available at scrape time).
+        # Only upgrade, never downgrade: a title-based "strong" stays "strong".
+        if job.get("match") == "none":
+            page_text = soup.get_text(" ", strip=True)
+            rescored = score_match(job.get("title", ""), page_text)
+            if rescored != "none":
+                job["match"] = rescored
+                print(f"     ↑ rescored to '{rescored}' from page text: {job['title'][:60]}")
+
     except Exception as e:
         print(f"     Enrichment failed ({url[:60]}): {e}")
     return job
@@ -1128,16 +1160,30 @@ def main():
         print(f"  → Added {count} new unique jobs")
         time.sleep(1.5)
 
-    # ── 3. Filter: only relevant matches (strong or partial) ──────────────────
+    # ── 3. Pre-enrich Workday title-only jobs so rescoring can promote them ────
+    # Workday API returns only the job title — the subject keyword may only
+    # appear in the full posting. Fetch those pages first, then rescore.
     print(f"\n{'=' * 60}")
     print("FILTERING & ENRICHING")
     print(f"{'=' * 60}")
     print(f"Total raw jobs before match filter: {len(all_jobs)}")
 
+    ua_sources = {"University Affairs", "CAUT Academic Work"}
+    workday_unscored = [
+        j for j in all_jobs
+        if j.get("match") == "none"
+        and j.get("source") not in ua_sources
+        and is_relevant_position(j.get("title", ""))
+    ]
+    if workday_unscored:
+        print(f"Pre-enriching {len(workday_unscored)} Workday jobs for rescore...")
+        for job in workday_unscored:
+            enrich_job(session, job)   # modifies job dict in-place; may set match
+
     relevant = [j for j in all_jobs if j.get("match") in ("strong", "partial")]
     print(f"After match filter: {len(relevant)}")
 
-    # ── 4. Enrich (fetch deadlines from job detail pages) ─────────────────────
+    # ── 4. Enrich remaining relevant jobs (deadline / apply URL / institution) ─
     enriched = []
     for i, job in enumerate(relevant):
         print(f"Enriching {i+1}/{len(relevant)}: {job['title'][:55]}")
