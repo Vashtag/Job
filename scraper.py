@@ -374,6 +374,7 @@ def fetch_ua_nonce(session) -> str:
     """
     try:
         resp = session.get(UA_SEARCH_URL, headers=BROWSER_HEADERS, timeout=20)
+        print(f"  → UA nonce page: HTTP {resp.status_code} ({len(resp.content)} bytes)")
         if resp.status_code != 200:
             return ""
         text = resp.text
@@ -412,6 +413,7 @@ def fetch_ua_rss(session) -> list:
     for url in rss_urls:
         try:
             resp = session.get(url, headers=BROWSER_HEADERS, timeout=15)
+            print(f"  → UA RSS {url}: HTTP {resp.status_code} ({len(resp.content)} bytes)")
             if resp.status_code != 200:
                 continue
             text = resp.text.strip()
@@ -546,6 +548,7 @@ def fetch_ua_ajax(session, keywords: str, page: int = 1, nonce: str = "") -> lis
             payload["action"] = "job_manager_get_listings"
         try:
             resp = session.post(endpoint, data=payload, headers=AJAX_HEADERS, timeout=20)
+            print(f"  → UA AJAX {endpoint}: HTTP {resp.status_code} ({len(resp.content)} bytes)")
             if resp.status_code != 200:
                 continue
             data = resp.json()
@@ -785,6 +788,75 @@ def fetch_workday_jobs_site(session, name: str, tenant: str, career_site: str,
     return jobs
 
 
+# ── CAUT Academic Work scraper ────────────────────────────────────────────────
+# academicwork.ca is CAUT's Canadian academic job board (caut.ca).
+# Jobs are indexed with clean slug URLs. We try the search page + sitemap.
+
+CAUT_BASE = "https://www.academicwork.ca"
+
+
+def fetch_caut(session, term: str) -> list:
+    """Scrape CAUT Academic Work search results page for a keyword."""
+    search_url = f"{CAUT_BASE}/search"
+    params = {"q": term}
+    jobs = []
+    try:
+        resp = session.get(search_url, params=params, headers=BROWSER_HEADERS, timeout=20)
+        print(f"  → CAUT '{term}': HTTP {resp.status_code} ({len(resp.content)} bytes)")
+        if resp.status_code != 200:
+            return []
+        soup = BeautifulSoup(resp.text, "html.parser")
+
+        # Try structured selectors first
+        for sel in ["article.job", ".job-card", ".job-listing", "li.job", ".search-result"]:
+            items = soup.select(sel)
+            if items:
+                for item in items:
+                    link = item.select_one("a[href]")
+                    if not link:
+                        continue
+                    title = link.get_text(strip=True) or item.get_text(" ", strip=True)[:120]
+                    href = link["href"]
+                    if not href.startswith("http"):
+                        href = urljoin(CAUT_BASE, href)
+                    if not title or href in {j["url"] for j in jobs}:
+                        continue
+                    # Extract institution from common sub-elements
+                    inst_el = item.select_one(".institution, .university, .employer, .company")
+                    institution = inst_el.get_text(strip=True) if inst_el else ""
+                    loc_el = item.select_one(".location, .city, .province")
+                    location = loc_el.get_text(strip=True) if loc_el else "Canada"
+                    jobs.append(make_job(
+                        title=title, institution=institution, location=location,
+                        province=get_province(location), url=href,
+                        source="CAUT Academic Work", description=term,
+                    ))
+                if jobs:
+                    return jobs
+
+        # Fallback: scan all links pointing to /jobs/
+        seen = set()
+        for link in soup.select('a[href*="/jobs/"]'):
+            title = link.get_text(strip=True)
+            href = link.get("href", "")
+            if not href.startswith("http"):
+                href = urljoin(CAUT_BASE, href)
+            if not title or href in seen or len(title) < 10:
+                continue
+            # Skip nav/footer links that just say "Jobs" or similar
+            if len(title) > 150 or title.lower() in ("jobs", "view jobs", "all jobs"):
+                continue
+            seen.add(href)
+            jobs.append(make_job(
+                title=title, institution="", location="Canada",
+                province="Unknown", url=href,
+                source="CAUT Academic Work", description=term,
+            ))
+    except Exception as e:
+        print(f"     CAUT '{term}': {e}")
+    return jobs
+
+
 # ── HTML careers page scraper ─────────────────────────────────────────────────
 
 ALL_SUBJECT_KW = STRONG_KEYWORDS + PARTIAL_KEYWORDS
@@ -935,12 +1007,13 @@ def main():
     session = requests.Session()
     session.headers.update(BROWSER_HEADERS)
 
-    # Warm-up
+    # Warm-up — log status so we know if the site is reachable at all
     try:
-        session.get("https://www.universityaffairs.ca", timeout=15)
+        r = session.get("https://www.universityaffairs.ca", timeout=15)
+        print(f"  UA warm-up: HTTP {r.status_code} ({len(r.content)} bytes)")
         time.sleep(1.5)
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"  UA warm-up FAILED: {e}")
 
     all_jobs: list[dict] = []
     seen_urls: set[str] = set()
@@ -1003,6 +1076,23 @@ def main():
         time.sleep(2)
 
     print(f"\nUniversity Affairs total: {ua_total} new unique jobs")
+
+    # ── 1b. CAUT Academic Work ────────────────────────────────────────────────
+    print("\n" + "=" * 60)
+    print("SOURCE: CAUT Academic Work (academicwork.ca)")
+    print("=" * 60)
+    sources_checked.append("CAUT Academic Work")
+    caut_total = 0
+    for term in SEARCH_TERMS:
+        caut_jobs = fetch_caut(session, term)
+        # Filter to relevant positions
+        caut_jobs = [j for j in caut_jobs if is_relevant_position(j.get("title", ""))]
+        added = add_jobs(caut_jobs, "CAUT Academic Work")
+        caut_total += added
+        if added:
+            print(f"  '{term}': +{added}")
+        time.sleep(1.5)
+    print(f"CAUT total: {caut_total} new unique jobs")
 
     # ── 2. University-specific sources ────────────────────────────────────────
     for uni in UNIVERSITY_SOURCES:
