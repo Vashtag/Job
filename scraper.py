@@ -959,57 +959,46 @@ def fetch_csbbcs(session) -> list:
 
 
 # ── CAUT Academic Work scraper ────────────────────────────────────────────────
-# academicwork.ca is CAUT's Canadian academic job board (caut.ca).
-# Jobs are indexed with clean slug URLs. We try the search page + sitemap.
+# academicwork.ca — CAUT's Canadian academic job board.
+# Research: server-side rendered, search params: ?q=term or ?discipline=N
+# Also try the French mirror travailacademique.ca for bilingual coverage.
 
 CAUT_BASE = "https://www.academicwork.ca"
+CAUT_FR_BASE = "https://www.travailacademique.ca"
 
 
 def fetch_caut(session, term: str) -> list:
-    """Scrape CAUT Academic Work search results page for a keyword."""
-    search_url = f"{CAUT_BASE}/search"
-    params = {"q": term}
+    """Scrape CAUT Academic Work (EN + FR mirrors) for a keyword."""
+    search_urls = [
+        f"{CAUT_BASE}/search?q={term}",
+        f"{CAUT_FR_BASE}/search?q={term}",
+    ]
     jobs = []
-    try:
-        resp = session.get(search_url, params=params, headers=BROWSER_HEADERS, timeout=20)
-        print(f"  → CAUT '{term}': HTTP {resp.status_code} ({len(resp.content)} bytes)")
-        if resp.status_code != 200:
-            return []
-        soup = BeautifulSoup(resp.text, "html.parser")
+    seen: set[str] = set()
 
-        # Try structured selectors first
-        for sel in ["article.job", ".job-card", ".job-listing", "li.job", ".search-result"]:
-            items = soup.select(sel)
-            if items:
-                for item in items:
-                    link = item.select_one("a[href]")
-                    if not link:
-                        continue
-                    title = link.get_text(strip=True) or item.get_text(" ", strip=True)[:120]
-                    href = link["href"]
-                    if not href.startswith("http"):
-                        href = urljoin(CAUT_BASE, href)
-                    if not title or href in {j["url"] for j in jobs}:
-                        continue
-                    # Extract institution from common sub-elements
-                    inst_el = item.select_one(".institution, .university, .employer, .company")
-                    institution = inst_el.get_text(strip=True) if inst_el else ""
-                    loc_el = item.select_one(".location, .city, .province")
-                    location = loc_el.get_text(strip=True) if loc_el else "Canada"
-                    jobs.append(make_job(
-                        title=title, institution=institution, location=location,
-                        province=get_province(location), url=href,
-                        source="CAUT Academic Work",
-                    ))
-                if jobs:
-                    return jobs
+    for search_url in search_urls:
+        try:
+            resp = session.get(search_url, headers=BROWSER_HEADERS, timeout=20)
+            print(f"  → CAUT '{term}' ({search_url.split('/')[2]}): HTTP {resp.status_code} ({len(resp.content)} bytes)")
+            if resp.status_code != 200:
+                continue
 
-        # No structured selectors matched — page is likely JS-rendered.
-        # Do NOT fall back to scanning all /jobs/ links: that grabs every job
-        # on the page regardless of whether it matched the search term.
-        print(f"  → CAUT '{term}': no structured job elements found (JS-rendered?)")
-    except Exception as e:
-        print(f"     CAUT '{term}': {e}")
+            soup = BeautifulSoup(resp.text, "html.parser")
+            for tag in soup.select("nav, header, footer, script, style"):
+                tag.decompose()
+
+            base = CAUT_BASE if "academicwork" in search_url else CAUT_FR_BASE
+            page_jobs = _parse_aggregator_html(soup, base, "CAUT Academic Work",
+                                               province="", category_hint=term)
+            for job in page_jobs:
+                if job["url"] not in seen:
+                    seen.add(job["url"])
+                    jobs.append(job)
+            time.sleep(1)
+
+        except Exception as e:
+            print(f"     CAUT ({search_url}): {e}")
+
     return jobs
 
 
@@ -1336,6 +1325,59 @@ def fetch_academiccareers(session) -> list:
     return jobs
 
 
+# ── Academic Positions (academicpositions.com) ────────────────────────────────
+# Uses iCIMS ATS which is server-side rendered.
+# URL pattern: /jobs/position/[type]/country/canada
+# Also supports /find-jobs with query params.
+
+ACADEMICPOSITIONS_PAGES = [
+    ("https://academicpositions.com/jobs/position/professor/country/canada",  ""),
+    ("https://academicpositions.com/jobs/position/lecturer/country/canada",   ""),
+    ("https://academicpositions.com/find-jobs?regions[]=canada&q=kinesiology",  "kinesiology"),
+    ("https://academicpositions.com/find-jobs?regions[]=canada&q=neuroscience", "neuroscience"),
+    ("https://academicpositions.com/find-jobs?regions[]=canada&q=anatomy",      "anatomy"),
+]
+
+
+def fetch_academicpositions(session) -> list:
+    """Scrape Academic Positions Canada professor/lecturer listings."""
+    jobs = []
+    seen: set[str] = set()
+
+    for page_url, category in ACADEMICPOSITIONS_PAGES:
+        try:
+            resp = session.get(page_url, headers=BROWSER_HEADERS, timeout=20)
+            print(f"  → AcademicPositions [{category or 'all-CA'}]: HTTP {resp.status_code} ({len(resp.content)} bytes)")
+            if resp.status_code != 200:
+                continue
+
+            soup = BeautifulSoup(resp.text, "html.parser")
+            for tag in soup.select("nav, header, footer, script, style"):
+                tag.decompose()
+
+            page_jobs = _parse_aggregator_html(soup, page_url,
+                                               "Academic Positions",
+                                               province="",
+                                               category_hint=category)
+            added = 0
+            for job in page_jobs:
+                if job["url"] not in seen:
+                    seen.add(job["url"])
+                    jobs.append(job)
+                    added += 1
+            print(f"  → AcademicPositions [{category or 'all-CA'}]: {added} new jobs")
+            time.sleep(1.5)
+
+        except Exception as e:
+            print(f"     AcademicPositions ({page_url}): {e}")
+
+    if jobs:
+        print(f"  ✓ AcademicPositions: {len(jobs)} relevant jobs total")
+    else:
+        print("  ✗ AcademicPositions: 0 jobs found")
+    return jobs
+
+
 # ── HTML careers page scraper ─────────────────────────────────────────────────
 
 ALL_SUBJECT_KW = STRONG_KEYWORDS + PARTIAL_KEYWORDS
@@ -1623,6 +1665,16 @@ def main():
     ac_jobs = fetch_academiccareers(session)
     ac_total = add_jobs(ac_jobs, "Academic Careers")
     print(f"Academic Careers total: {ac_total} new unique jobs")
+    time.sleep(1.5)
+
+    # ── 1g. Academic Positions ────────────────────────────────────────────────
+    print("\n" + "=" * 60)
+    print("SOURCE: Academic Positions (academicpositions.com)")
+    print("=" * 60)
+    sources_checked.append("Academic Positions")
+    ap_jobs = fetch_academicpositions(session)
+    ap_total = add_jobs(ap_jobs, "Academic Positions")
+    print(f"Academic Positions total: {ap_total} new unique jobs")
     time.sleep(1.5)
 
     # ── 2. University-specific sources ────────────────────────────────────────
