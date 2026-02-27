@@ -565,7 +565,6 @@ def fetch_ua_wp_rest(session, keyword: str) -> list:
                 title=title, institution=institution, location=location,
                 province=get_province(location), url=link,
                 source="University Affairs", deadline=parse_deadline(deadline_raw),
-                description=keyword,
             ))
     return jobs
 
@@ -804,9 +803,6 @@ def fetch_workday_jobs_site(session, name: str, tenant: str, career_site: str,
                     title=title, institution=name, location=loc,
                     province=get_province(loc) or province,
                     url=job_url, source=name, date_posted=p.get("postedOn", ""),
-                    # Pass search term as description so score_match uses it
-                    # (Workday searches full job text; keyword may not appear in title)
-                    description=term,
                 ))
             time.sleep(0.8)
 
@@ -868,7 +864,7 @@ def fetch_caut(session, term: str) -> list:
                     jobs.append(make_job(
                         title=title, institution=institution, location=location,
                         province=get_province(location), url=href,
-                        source="CAUT Academic Work", description=term,
+                        source="CAUT Academic Work",
                     ))
                 if jobs:
                     return jobs
