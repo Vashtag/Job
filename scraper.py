@@ -130,129 +130,31 @@ CITY_TO_PROVINCE = {
 # Note: myworkday.com entries removed — tenant names were guessed and DNS-invalid.
 # All confirmed portals use myworkdayjobs.com.
 
-UNIVERSITY_SOURCES = [
-    # ── myworkdayjobs.com portals — CONFIRMED from real job URLs ─────────────
+# ── Workday API sources only — confirmed from real job URLs ───────────────────
+# Individual university HTML career pages removed: they are almost all
+# JS-rendered SPAs that return empty results when fetched with requests.
+# Coverage is now handled by the aggregator scrapers above.
 
+WORKDAY_SOURCES = [
     # UBC: https://ubc.wd10.myworkdayjobs.com/ubcfacultyjobs
     {"name": "University of British Columbia", "province": "British Columbia",
-     "type": "workday_jobs", "tenant": "ubc", "career_site": "ubcfacultyjobs", "ver": "wd10"},
+     "tenant": "ubc", "career_site": "ubcfacultyjobs", "ver": "wd10"},
 
     # Waterloo: https://uwaterloo.wd3.myworkdayjobs.com/uw_careers
     {"name": "University of Waterloo", "province": "Ontario",
-     "type": "workday_jobs", "tenant": "uwaterloo", "career_site": "uw_careers", "ver": "wd3"},
+     "tenant": "uwaterloo", "career_site": "uw_careers", "ver": "wd3"},
 
     # McGill: https://mcgill.wd3.myworkdayjobs.com/McGill_Careers
     {"name": "McGill University", "province": "Quebec",
-     "type": "workday_jobs", "tenant": "mcgill", "career_site": "McGill_Careers", "ver": "wd3"},
+     "tenant": "mcgill", "career_site": "McGill_Careers", "ver": "wd3"},
 
     # Ottawa: https://uottawa.wd3.myworkdayjobs.com/uOttawa_External_Career_Site
     {"name": "University of Ottawa", "province": "Ontario",
-     "type": "workday_jobs", "tenant": "uottawa",
-     "career_site": "uOttawa_External_Career_Site", "ver": "wd3"},
+     "tenant": "uottawa", "career_site": "uOttawa_External_Career_Site", "ver": "wd3"},
 
     # Brock: https://brocku.wd3.myworkdayjobs.com/brocku_careers
     {"name": "Brock University", "province": "Ontario",
-     "type": "workday_jobs", "tenant": "brocku", "career_site": "brocku_careers", "ver": "wd3"},
-
-    # ── HTML careers pages ────────────────────────────────────────────────────
-
-    # McMaster uses PeopleSoft (not Workday)
-    {"name": "McMaster University", "province": "Ontario", "type": "html",
-     "urls": ["https://careers.mcmaster.ca/",
-              "https://careers.mcmaster.ca/job-search-results/?category=Academic%20/%20Faculty"]},
-
-    # Western uses PeopleSoft at recruit.uwo.ca (not Workday)
-    {"name": "Western University", "province": "Ontario", "type": "html",
-     "urls": ["https://recruit.uwo.ca/hr/jobs_available.htm",
-              "https://uwo.ca/hr/working/faculty/index.html"]},
-
-    {"name": "Queen's University", "province": "Ontario", "type": "html",
-     "urls": ["https://careers.queensu.ca/",
-              "https://www.queensu.ca/humanresources/apply-jobs"]},
-
-    {"name": "Carleton University", "province": "Ontario", "type": "html",
-     "urls": ["https://carleton.ca/hr/careers/",
-              "https://carleton.ca/hr/careers/faculty-positions/"]},
-
-    # York uses Technomedia ATS (not Workday)
-    {"name": "York University", "province": "Ontario", "type": "html",
-     "urls": ["https://hr.yorku.ca/careers/",
-              "https://jobs-ca.technomedia.com/yorkuniversity/"]},
-
-    {"name": "University of Guelph", "province": "Ontario", "type": "html",
-     "urls": ["https://careers.uoguelph.ca/",
-              "https://www.uoguelph.ca/hr/jobs"]},
-
-    {"name": "University of Toronto", "province": "Ontario", "type": "html",
-     "urls": ["https://jobs.utoronto.ca/faculty-and-librarians-staff",
-              "https://jobs.utoronto.ca/"]},
-
-    {"name": "Toronto Metropolitan University", "province": "Ontario", "type": "html",
-     "urls": ["https://www.torontomu.ca/careers/faculty-positions/"]},
-
-    {"name": "Wilfrid Laurier University", "province": "Ontario", "type": "html",
-     "urls": ["https://www.wlu.ca/careers/"]},
-
-    {"name": "Trent University", "province": "Ontario", "type": "html",
-     "urls": ["https://www.trentu.ca/hr/careers/"]},
-
-    # NOSM University — try multiple known URL patterns for their job listings
-    {"name": "NOSM University", "province": "Ontario", "type": "html",
-     "urls": [
-         "https://www.nosm.ca/about/administrative-offices/human-resources/work-at-nosm/career-opportunity/",
-         "https://www.nosm.ca/about/administrative-offices/human-resources/work-at-nosm/",
-         "https://www.nosm.ca/about/administrative-offices/human-resources/",
-     ]},
-
-    # University of Alberta uses Oracle Cloud HCM (not Workday)
-    {"name": "University of Alberta", "province": "Alberta", "type": "html",
-     "urls": ["https://www.ualberta.ca/en/careers.html",
-              "https://www.ualberta.ca/en/human-resources/hr-for-prospective-employees/faculty-positions.html"]},
-
-    {"name": "University of Calgary", "province": "Alberta", "type": "html",
-     "urls": ["https://www.ucalgary.ca/careers",
-              "https://ucalgary.ca/hr/careers/academic"]},
-
-    {"name": "University of Lethbridge", "province": "Alberta", "type": "html",
-     "urls": ["https://www.ulethbridge.ca/hr/jobs/academic"]},
-
-    # University of Manitoba uses own portal (not Workday)
-    {"name": "University of Manitoba", "province": "Manitoba", "type": "html",
-     "urls": ["https://umanitoba.ca/careers/"]},
-
-    {"name": "University of Saskatchewan", "province": "Saskatchewan", "type": "html",
-     "urls": ["https://careers.usask.ca/",
-              "https://careers.usask.ca/job-search-results/?category=Faculty"]},
-
-    # UBC Faculty of Education (separate from main UBC Workday portal)
-    {"name": "UBC Faculty of Education", "province": "British Columbia", "type": "html",
-     "urls": ["https://educ.ubc.ca/faculty-staff/jobs-at-educ/",
-              "https://educ.ubc.ca/about/jobs/"]},
-
-    # Simon Fraser uses own HR portal (not Workday)
-    {"name": "Simon Fraser University", "province": "British Columbia", "type": "html",
-     "urls": ["https://www.sfu.ca/human-resources/join-SFU.html",
-              "https://www.sfu.ca/human-resources/careers.html"]},
-
-    {"name": "University of Victoria", "province": "British Columbia", "type": "html",
-     "urls": ["https://www.uvic.ca/hr/careers/",
-              "https://www.uvic.ca/hr/careers/faculty/index.php"]},
-
-    {"name": "University of Northern BC", "province": "British Columbia", "type": "html",
-     "urls": ["https://www.unbc.ca/people/human-resources/career-opportunities/faculty"]},
-
-    # Memorial uses own portal (not Workday)
-    {"name": "Memorial University", "province": "Newfoundland and Labrador", "type": "html",
-     "urls": ["https://www.mun.ca/hr/careers/"]},
-
-    {"name": "Dalhousie University", "province": "Nova Scotia", "type": "html",
-     "urls": ["https://dal.ca/dept/hr/careers.html"]},
-
-    {"name": "Concordia University", "province": "Quebec", "type": "html",
-     "urls": ["https://www.concordia.ca/hr/dept/talent-acquisition/careers.html"]},
-
-    {"name": "University of New Brunswick", "province": "New Brunswick", "type": "html",
-     "urls": ["https://www.unb.ca/hr/careers/"]},
+     "tenant": "brocku", "career_site": "brocku_careers", "ver": "wd3"},
 ]
 
 # Search terms used for Workday API and UA scraper.
@@ -959,57 +861,46 @@ def fetch_csbbcs(session) -> list:
 
 
 # ── CAUT Academic Work scraper ────────────────────────────────────────────────
-# academicwork.ca is CAUT's Canadian academic job board (caut.ca).
-# Jobs are indexed with clean slug URLs. We try the search page + sitemap.
+# academicwork.ca — CAUT's Canadian academic job board.
+# Research: server-side rendered, search params: ?q=term or ?discipline=N
+# Also try the French mirror travailacademique.ca for bilingual coverage.
 
 CAUT_BASE = "https://www.academicwork.ca"
+CAUT_FR_BASE = "https://www.travailacademique.ca"
 
 
 def fetch_caut(session, term: str) -> list:
-    """Scrape CAUT Academic Work search results page for a keyword."""
-    search_url = f"{CAUT_BASE}/search"
-    params = {"q": term}
+    """Scrape CAUT Academic Work (EN + FR mirrors) for a keyword."""
+    search_urls = [
+        f"{CAUT_BASE}/search?q={term}",
+        f"{CAUT_FR_BASE}/search?q={term}",
+    ]
     jobs = []
-    try:
-        resp = session.get(search_url, params=params, headers=BROWSER_HEADERS, timeout=20)
-        print(f"  → CAUT '{term}': HTTP {resp.status_code} ({len(resp.content)} bytes)")
-        if resp.status_code != 200:
-            return []
-        soup = BeautifulSoup(resp.text, "html.parser")
+    seen: set[str] = set()
 
-        # Try structured selectors first
-        for sel in ["article.job", ".job-card", ".job-listing", "li.job", ".search-result"]:
-            items = soup.select(sel)
-            if items:
-                for item in items:
-                    link = item.select_one("a[href]")
-                    if not link:
-                        continue
-                    title = link.get_text(strip=True) or item.get_text(" ", strip=True)[:120]
-                    href = link["href"]
-                    if not href.startswith("http"):
-                        href = urljoin(CAUT_BASE, href)
-                    if not title or href in {j["url"] for j in jobs}:
-                        continue
-                    # Extract institution from common sub-elements
-                    inst_el = item.select_one(".institution, .university, .employer, .company")
-                    institution = inst_el.get_text(strip=True) if inst_el else ""
-                    loc_el = item.select_one(".location, .city, .province")
-                    location = loc_el.get_text(strip=True) if loc_el else "Canada"
-                    jobs.append(make_job(
-                        title=title, institution=institution, location=location,
-                        province=get_province(location), url=href,
-                        source="CAUT Academic Work",
-                    ))
-                if jobs:
-                    return jobs
+    for search_url in search_urls:
+        try:
+            resp = session.get(search_url, headers=BROWSER_HEADERS, timeout=20)
+            print(f"  → CAUT '{term}' ({search_url.split('/')[2]}): HTTP {resp.status_code} ({len(resp.content)} bytes)")
+            if resp.status_code != 200:
+                continue
 
-        # No structured selectors matched — page is likely JS-rendered.
-        # Do NOT fall back to scanning all /jobs/ links: that grabs every job
-        # on the page regardless of whether it matched the search term.
-        print(f"  → CAUT '{term}': no structured job elements found (JS-rendered?)")
-    except Exception as e:
-        print(f"     CAUT '{term}': {e}")
+            soup = BeautifulSoup(resp.text, "html.parser")
+            for tag in soup.select("nav, header, footer, script, style"):
+                tag.decompose()
+
+            base = CAUT_BASE if "academicwork" in search_url else CAUT_FR_BASE
+            page_jobs = _parse_aggregator_html(soup, base, "CAUT Academic Work",
+                                               province="", category_hint=term)
+            for job in page_jobs:
+                if job["url"] not in seen:
+                    seen.add(job["url"])
+                    jobs.append(job)
+            time.sleep(1)
+
+        except Exception as e:
+            print(f"     CAUT ({search_url}): {e}")
+
     return jobs
 
 
@@ -1114,6 +1005,278 @@ def fetch_higheredjobs_rss(session) -> list:
 
     if jobs:
         print(f"  ✓ HigherEdJobs: {len(jobs)} relevant Canadian jobs total")
+    return jobs
+
+
+# ── Shared HTML job-listing parser ────────────────────────────────────────────
+
+# Selectors tried in order across different job board platforms
+_JOB_BLOCK_SELECTORS = [
+    "article.job-result", "article.job", "article.vacancy", "article.listing",
+    "li.job-result", "li.job", "li.listing", "li.vacancy",
+    ".job-listing", ".job-card", ".vacancy-item", ".position-item",
+    "[class*='job-result']", "[class*='job-listing']", "[class*='job-card']",
+    "tr.job", ".search-result-item",
+]
+_TITLE_SELECTORS   = ["h2", "h3", "h4", ".job-title", ".title", ".position-title"]
+_INST_SELECTORS    = [".employer", ".company", ".institution", ".organization",
+                      ".company-name", "[class*='employer']", "[class*='company']"]
+_LOC_SELECTORS     = [".location", ".job-location", ".city", "[class*='location']"]
+
+
+def _parse_aggregator_html(soup: BeautifulSoup, base_url: str, source: str,
+                            province: str = "",
+                            category_hint: str = "") -> list:
+    """
+    Parse an aggregator search-results page.
+
+    category_hint: discipline already known from the URL (e.g. "kinesiology").
+        When set, jobs only need to pass is_relevant_position(); the category
+        guarantees subject relevance and is used as description in score_match.
+    When empty, the job title must itself contain a subject keyword.
+    """
+    jobs = []
+    seen: set[str] = set()
+
+    for sel in _JOB_BLOCK_SELECTORS:
+        items = soup.select(sel)
+        if not items:
+            continue
+        for item in items:
+            title_el = next((item.select_one(s) for s in _TITLE_SELECTORS
+                             if item.select_one(s)), None)
+            title = title_el.get_text(strip=True) if title_el else ""
+            if not title:
+                # Fall back: first link text
+                a = item.select_one("a[href]")
+                title = a.get_text(strip=True) if a else ""
+            if not title or len(title) < 8:
+                continue
+
+            link = item.select_one("a[href]")
+            href = link["href"] if link else ""
+            if not href:
+                continue
+            if not href.startswith("http"):
+                href = urljoin(base_url, href)
+            if href in seen:
+                continue
+
+            inst_el = next((item.select_one(s) for s in _INST_SELECTORS
+                            if item.select_one(s)), None)
+            institution = inst_el.get_text(strip=True) if inst_el else ""
+
+            loc_el = next((item.select_one(s) for s in _LOC_SELECTORS
+                           if item.select_one(s)), None)
+            location = loc_el.get_text(strip=True) if loc_el else (province or "Canada")
+
+            if not is_relevant_position(title):
+                continue
+            if score_match(title, category_hint) == "none":
+                continue
+
+            seen.add(href)
+            jobs.append(make_job(
+                title=title, institution=institution,
+                location=location,
+                province=get_province(location) or province or "Unknown",
+                url=href, source=source,
+                description=category_hint,
+            ))
+        if jobs:
+            return jobs
+
+    # Fallback: scan all <a> tags — but ONLY keep those whose text contains a
+    # subject keyword in the title (never use category_hint here to avoid
+    # false positives like the mining-job bug).
+    for link in soup.select("a[href]"):
+        title = link.get_text(strip=True)
+        if not title or len(title) < 10 or len(title) > 200:
+            continue
+        href = link.get("href", "")
+        if not href or href.startswith(("#", "mailto:", "tel:")):
+            continue
+        if not href.startswith("http"):
+            href = urljoin(base_url, href)
+        if href in seen:
+            continue
+        if not is_relevant_position(title):
+            continue
+        if score_match(title) == "none":   # title-only check, no category hint
+            continue
+        seen.add(href)
+        parent_text = link.parent.get_text(" ", strip=True) if link.parent else ""
+        location = province or "Canada"
+        jobs.append(make_job(
+            title=title, institution="",
+            location=location,
+            province=get_province(parent_text) or province or "Unknown",
+            url=href, source=source,
+        ))
+    return jobs
+
+
+# ── Chronicle of Higher Education Jobs ────────────────────────────────────────
+# Server-side rendered (confirmed). URL pattern: /jobs/[category]/canada/
+# Discipline slugs confirmed from live site.
+
+CHRONICLE_PAGES = [
+    ("https://jobs.chronicle.com/jobs/kinesiology-exercise-physiology-and-physical-education/canada/",
+     "kinesiology"),
+    ("https://jobs.chronicle.com/jobs/neuroscience-cognitive-science-and-neurology/canada/",
+     "neuroscience"),
+    ("https://jobs.chronicle.com/jobs/anatomy-and-physiology/canada/",
+     "anatomy"),
+    ("https://jobs.chronicle.com/jobs/sports-medicine-and-physical-therapy/canada/",
+     "physiology"),
+]
+
+
+def fetch_chronicle(session) -> list:
+    """Scrape Chronicle of Higher Ed Canada faculty listings by discipline."""
+    jobs = []
+    seen: set[str] = set()
+
+    for page_url, category in CHRONICLE_PAGES:
+        try:
+            resp = session.get(page_url, headers=BROWSER_HEADERS, timeout=20)
+            print(f"  → Chronicle [{category}]: HTTP {resp.status_code} ({len(resp.content)} bytes)")
+            if resp.status_code != 200:
+                continue
+
+            soup = BeautifulSoup(resp.text, "html.parser")
+            for tag in soup.select("nav, header, footer, script, style"):
+                tag.decompose()
+
+            page_jobs = _parse_aggregator_html(soup, page_url,
+                                               "Chronicle of Higher Ed",
+                                               province="",
+                                               category_hint=category)
+            added = 0
+            for job in page_jobs:
+                if job["url"] not in seen:
+                    seen.add(job["url"])
+                    jobs.append(job)
+                    added += 1
+            print(f"  → Chronicle [{category}]: {added} new jobs")
+            time.sleep(1.5)
+
+        except Exception as e:
+            print(f"     Chronicle ({page_url}): {e}")
+
+    if jobs:
+        print(f"  ✓ Chronicle: {len(jobs)} relevant jobs total")
+    else:
+        print("  ✗ Chronicle: 0 jobs found")
+    return jobs
+
+
+# ── Academic Careers (academiccareers.com) ────────────────────────────────────
+# Server-side rendered. Canada jobs at /countries/jobs-in-canada/
+# Also supports keyword search and discipline categories.
+
+ACADEMICCAREERS_PAGES = [
+    ("https://academiccareers.com/browse-jobs?q=kinesiology&country=Canada",    "kinesiology"),
+    ("https://academiccareers.com/browse-jobs?q=neuroscience&country=Canada",   "neuroscience"),
+    ("https://academiccareers.com/browse-jobs?q=anatomy&country=Canada",        "anatomy"),
+    ("https://academiccareers.com/browse-jobs?q=physiology&country=Canada",     "physiology"),
+    ("https://academiccareers.com/countries/jobs-in-canada/",                   ""),
+]
+
+
+def fetch_academiccareers(session) -> list:
+    """Scrape Academic Careers Canada job listings."""
+    jobs = []
+    seen: set[str] = set()
+
+    for page_url, category in ACADEMICCAREERS_PAGES:
+        try:
+            resp = session.get(page_url, headers=BROWSER_HEADERS, timeout=20)
+            print(f"  → AcademicCareers [{category or 'all-CA'}]: HTTP {resp.status_code} ({len(resp.content)} bytes)")
+            if resp.status_code != 200:
+                continue
+
+            soup = BeautifulSoup(resp.text, "html.parser")
+            for tag in soup.select("nav, header, footer, script, style"):
+                tag.decompose()
+
+            page_jobs = _parse_aggregator_html(soup, page_url,
+                                               "Academic Careers",
+                                               province="",
+                                               category_hint=category)
+            # Filter to Canadian jobs (site may include non-CA results)
+            page_jobs = [j for j in page_jobs if _is_canadian(
+                j.get("location", "") + " " + j.get("institution", "")
+            ) or category]  # keyword-search pages are CA-filtered by param
+            added = 0
+            for job in page_jobs:
+                if job["url"] not in seen:
+                    seen.add(job["url"])
+                    jobs.append(job)
+                    added += 1
+            print(f"  → AcademicCareers [{category or 'all-CA'}]: {added} new jobs")
+            time.sleep(1.5)
+
+        except Exception as e:
+            print(f"     AcademicCareers ({page_url}): {e}")
+
+    if jobs:
+        print(f"  ✓ AcademicCareers: {len(jobs)} relevant jobs total")
+    else:
+        print("  ✗ AcademicCareers: 0 jobs found")
+    return jobs
+
+
+# ── Academic Positions (academicpositions.com) ────────────────────────────────
+# Uses iCIMS ATS which is server-side rendered.
+# URL pattern: /jobs/position/[type]/country/canada
+# Also supports /find-jobs with query params.
+
+ACADEMICPOSITIONS_PAGES = [
+    ("https://academicpositions.com/jobs/position/professor/country/canada",  ""),
+    ("https://academicpositions.com/jobs/position/lecturer/country/canada",   ""),
+    ("https://academicpositions.com/find-jobs?regions[]=canada&q=kinesiology",  "kinesiology"),
+    ("https://academicpositions.com/find-jobs?regions[]=canada&q=neuroscience", "neuroscience"),
+    ("https://academicpositions.com/find-jobs?regions[]=canada&q=anatomy",      "anatomy"),
+]
+
+
+def fetch_academicpositions(session) -> list:
+    """Scrape Academic Positions Canada professor/lecturer listings."""
+    jobs = []
+    seen: set[str] = set()
+
+    for page_url, category in ACADEMICPOSITIONS_PAGES:
+        try:
+            resp = session.get(page_url, headers=BROWSER_HEADERS, timeout=20)
+            print(f"  → AcademicPositions [{category or 'all-CA'}]: HTTP {resp.status_code} ({len(resp.content)} bytes)")
+            if resp.status_code != 200:
+                continue
+
+            soup = BeautifulSoup(resp.text, "html.parser")
+            for tag in soup.select("nav, header, footer, script, style"):
+                tag.decompose()
+
+            page_jobs = _parse_aggregator_html(soup, page_url,
+                                               "Academic Positions",
+                                               province="",
+                                               category_hint=category)
+            added = 0
+            for job in page_jobs:
+                if job["url"] not in seen:
+                    seen.add(job["url"])
+                    jobs.append(job)
+                    added += 1
+            print(f"  → AcademicPositions [{category or 'all-CA'}]: {added} new jobs")
+            time.sleep(1.5)
+
+        except Exception as e:
+            print(f"     AcademicPositions ({page_url}): {e}")
+
+    if jobs:
+        print(f"  ✓ AcademicPositions: {len(jobs)} relevant jobs total")
+    else:
+        print("  ✗ AcademicPositions: 0 jobs found")
     return jobs
 
 
@@ -1386,36 +1549,50 @@ def main():
         time.sleep(1.5)
     print(f"CAUT total: {caut_total} new unique jobs")
 
-    # ── 2. University-specific sources ────────────────────────────────────────
-    for uni in UNIVERSITY_SOURCES:
+    # ── 1e. Chronicle of Higher Education ─────────────────────────────────────
+    print("\n" + "=" * 60)
+    print("SOURCE: Chronicle of Higher Education Jobs (jobs.chronicle.com)")
+    print("=" * 60)
+    sources_checked.append("Chronicle of Higher Ed")
+    chronicle_jobs = fetch_chronicle(session)
+    chronicle_total = add_jobs(chronicle_jobs, "Chronicle of Higher Ed")
+    print(f"Chronicle total: {chronicle_total} new unique jobs")
+    time.sleep(1.5)
+
+    # ── 1f. Academic Careers ──────────────────────────────────────────────────
+    print("\n" + "=" * 60)
+    print("SOURCE: Academic Careers (academiccareers.com)")
+    print("=" * 60)
+    sources_checked.append("Academic Careers")
+    ac_jobs = fetch_academiccareers(session)
+    ac_total = add_jobs(ac_jobs, "Academic Careers")
+    print(f"Academic Careers total: {ac_total} new unique jobs")
+    time.sleep(1.5)
+
+    # ── 1g. Academic Positions ────────────────────────────────────────────────
+    print("\n" + "=" * 60)
+    print("SOURCE: Academic Positions (academicpositions.com)")
+    print("=" * 60)
+    sources_checked.append("Academic Positions")
+    ap_jobs = fetch_academicpositions(session)
+    ap_total = add_jobs(ap_jobs, "Academic Positions")
+    print(f"Academic Positions total: {ap_total} new unique jobs")
+    time.sleep(1.5)
+
+    # ── 2. Workday API sources ────────────────────────────────────────────────
+    for uni in WORKDAY_SOURCES:
         name = uni["name"]
         province = uni["province"]
-        src_type = uni["type"]
         sources_checked.append(name)
 
         print(f"\n{'=' * 60}")
-        print(f"SOURCE: {name} [{src_type.upper()}]")
+        print(f"SOURCE: {name} [WORKDAY API]")
         print(f"{'=' * 60}")
 
-        if src_type == "workday":
-            jobs = fetch_workday(
-                session, name, uni["tenant"], province,
-                preferred_ver=uni.get("ver", "wd5")
-            )
-        elif src_type == "workday_jobs":
-            jobs = fetch_workday_jobs_site(
-                session, name, uni["tenant"], uni["career_site"],
-                province, ver=uni.get("ver", "wd3")
-            )
-        elif src_type == "html":
-            jobs = fetch_html_careers(session, name, province, uni["urls"])
-        else:
-            jobs = []
-
-        # Position-type filter for HTML scrapers (Workday already filters)
-        if src_type == "html":
-            jobs = [j for j in jobs if is_relevant_position(j.get("title", ""))]
-
+        jobs = fetch_workday_jobs_site(
+            session, name, uni["tenant"], uni["career_site"],
+            province, ver=uni.get("ver", "wd3")
+        )
         count = add_jobs(jobs, name)
         print(f"  → Added {count} new unique jobs")
         time.sleep(1.5)
