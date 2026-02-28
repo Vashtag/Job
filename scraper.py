@@ -37,6 +37,9 @@ STRONG_KEYWORDS = [
     "gross anatomy", "neurophysiology", "cognitive neuroscience",
     "systems neuroscience", "behavioural neuroscience",
     "behavioral neuroscience", "human anatomy", "spinal cord",
+    # Biomechanics / neuromechanics subdisciplines
+    "neuromechanics", "motor neuroscience", "movement neuroscience",
+    "neurorehabilitation", "neuromuscular",
 ]
 
 PARTIAL_KEYWORDS = [
@@ -49,6 +52,9 @@ PARTIAL_KEYWORDS = [
     "human performance", "exercise physiology", "sport science",
     "movement science", "health education", "physical activity",
     "health kinesiology", "applied health", "health and physical",
+    # Clinical / medical education contexts
+    "clinical anatomy", "comparative anatomy", "medical education",
+    "basic sciences", "biomedical sciences",
 ]
 
 POSITION_KEYWORDS = [
@@ -165,6 +171,8 @@ SEARCH_TERMS = [
     "kinesiology",
     "neuroanatomy",
     "physiology",
+    "neuromechanics",   # e.g. WLU Neuromechanics position
+    "biomechanics",     # in PARTIAL_KEYWORDS but needs to be searched
     "physical education",
     "health sciences",
 ]
@@ -1577,6 +1585,29 @@ def main():
     ap_jobs = fetch_academicpositions(session)
     ap_total = add_jobs(ap_jobs, "Academic Positions")
     print(f"Academic Positions total: {ap_total} new unique jobs")
+    time.sleep(1.5)
+
+    # ── 1h. NOSM University (direct HR page) ─────────────────────────────────
+    # NOSM posts anatomy/physiology roles on their own website.
+    # Their HR page is plain server-rendered HTML (not a JS SPA).
+    # Confirmed: anatomy Lecturer positions appear here and may not appear
+    # on the aggregators above.
+    print("\n" + "=" * 60)
+    print("SOURCE: NOSM University (nosm.ca HR page)")
+    print("=" * 60)
+    sources_checked.append("NOSM University")
+    nosm_jobs = fetch_html_careers(
+        session,
+        name="NOSM University",
+        province="Ontario",
+        urls=[
+            "https://www.nosm.ca/about/administrative-offices/human-resources/work-at-nosm/career-opportunity/",
+            "https://www.nosm.ca/about/administrative-offices/human-resources/work-at-nosm/",
+        ],
+    )
+    nosm_jobs = [j for j in nosm_jobs if is_relevant_position(j.get("title", ""))]
+    nosm_total = add_jobs(nosm_jobs, "NOSM University")
+    print(f"NOSM total: {nosm_total} new unique jobs")
     time.sleep(1.5)
 
     # ── 2. Workday API sources ────────────────────────────────────────────────
