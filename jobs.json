@@ -1,5 +1,5 @@
 {
-  "last_updated": "2026-03-03T23:28:48.218064+00:00",
+  "last_updated": "2026-03-04T11:29:50.943573+00:00",
   "sources_checked": 13,
   "sources_successful": 1,
   "source_names": [
@@ -19,30 +19,6 @@
   ],
   "jobs": [
     {
-      "title": "Assistant Professor: Psychology (Cognitive Neuroscience)",
-      "institution": "",
-      "location": "Canada",
-      "province": "Unknown",
-      "deadline": null,
-      "url": "https://www.academicwork.ca/jobs/assistant-professor-psychology-cognitive-neuroscience-wilfrid-laurier-university",
-      "apply_url": "https://www.academicwork.ca/jobs/assistant-professor-psychology-cognitive-neuroscience-wilfrid-laurier-university",
-      "match": "strong",
-      "source": "CAUT Academic Work",
-      "date_posted": ""
-    },
-    {
-      "title": "Assistant Professor: Psychology (Cognitive Neuroscience)",
-      "institution": "",
-      "location": "Canada",
-      "province": "Unknown",
-      "deadline": null,
-      "url": "https://www.travailacademique.ca/jobs/assistant-professor-psychology-cognitive-neuroscience-wilfrid-laurier-university",
-      "apply_url": "https://www.travailacademique.ca/jobs/assistant-professor-psychology-cognitive-neuroscience-wilfrid-laurier-university",
-      "match": "strong",
-      "source": "CAUT Academic Work",
-      "date_posted": ""
-    },
-    {
       "title": "Assistant Professor: Health Sciences (Policy, Systems & Services, Health Equity)",
       "institution": "",
       "location": "Canada",
@@ -50,30 +26,6 @@
       "deadline": null,
       "url": "https://www.academicwork.ca/jobs/assistant-professor-health-sciences-policy-systems-services-health-equity-wilfrid-laurier-university",
       "apply_url": "https://www.academicwork.ca/jobs/assistant-professor-health-sciences-policy-systems-services-health-equity-wilfrid-laurier-university",
-      "match": "partial",
-      "source": "CAUT Academic Work",
-      "date_posted": ""
-    },
-    {
-      "title": "Assistant Professor: Health Sciences (Health Research Methodology)",
-      "institution": "",
-      "location": "Canada",
-      "province": "Unknown",
-      "deadline": null,
-      "url": "https://www.academicwork.ca/jobs/assistant-professor-health-sciences-health-research-methodology-wilfrid-laurier-university",
-      "apply_url": "https://www.academicwork.ca/jobs/assistant-professor-health-sciences-health-research-methodology-wilfrid-laurier-university",
-      "match": "partial",
-      "source": "CAUT Academic Work",
-      "date_posted": ""
-    },
-    {
-      "title": "Assistant Professor: Psychology (Behavioural Neurscience)",
-      "institution": "",
-      "location": "Canada",
-      "province": "Unknown",
-      "deadline": null,
-      "url": "https://www.academicwork.ca/jobs/assistant-professor-psychology-behavioural-neurscience-wilfrid-laurier-university",
-      "apply_url": "https://www.academicwork.ca/jobs/assistant-professor-psychology-behavioural-neurscience-wilfrid-laurier-university",
       "match": "partial",
       "source": "CAUT Academic Work",
       "date_posted": ""
@@ -91,25 +43,25 @@
       "date_posted": ""
     },
     {
-      "title": "Assistant Professor: Health Sciences (Health Research Methodology)",
+      "title": "Assistant Professor,  Physiology and Pathophysiology (Position #37033)",
       "institution": "",
       "location": "Canada",
       "province": "Unknown",
-      "deadline": null,
-      "url": "https://www.travailacademique.ca/jobs/assistant-professor-health-sciences-health-research-methodology-wilfrid-laurier-university",
-      "apply_url": "https://www.travailacademique.ca/jobs/assistant-professor-health-sciences-health-research-methodology-wilfrid-laurier-university",
+      "deadline": "January 1, 2027",
+      "url": "https://www.academicwork.ca/jobs/assistant-professor-position-37033-university-of-manitoba",
+      "apply_url": "https://www.academicwork.ca/jobs/assistant-professor-position-37033-university-of-manitoba",
       "match": "partial",
       "source": "CAUT Academic Work",
       "date_posted": ""
     },
     {
-      "title": "Assistant Professor: Psychology (Behavioural Neurscience)",
+      "title": "Assistant Professor,  Physiology and Pathophysiology (Position #37033)",
       "institution": "",
       "location": "Canada",
       "province": "Unknown",
-      "deadline": null,
-      "url": "https://www.travailacademique.ca/jobs/assistant-professor-psychology-behavioural-neurscience-wilfrid-laurier-university",
-      "apply_url": "https://www.travailacademique.ca/jobs/assistant-professor-psychology-behavioural-neurscience-wilfrid-laurier-university",
+      "deadline": "January 1, 2027",
+      "url": "https://www.travailacademique.ca/jobs/assistant-professor-position-37033-university-of-manitoba",
+      "apply_url": "https://www.travailacademique.ca/jobs/assistant-professor-position-37033-university-of-manitoba",
       "match": "partial",
       "source": "CAUT Academic Work",
       "date_posted": ""
