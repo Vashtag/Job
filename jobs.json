@@ -1,5 +1,5 @@
 {
-  "last_updated": "2026-03-05T23:52:51.529509+00:00",
+  "last_updated": "2026-03-06T11:28:19.142306+00:00",
   "sources_checked": 13,
   "sources_successful": 1,
   "source_names": [
@@ -19,6 +19,18 @@
   ],
   "jobs": [
     {
+      "title": "Psychology - 1-year Limited Term Appointment (Community, Developmental or Personality)",
+      "institution": "",
+      "location": "Canada",
+      "province": "Unknown",
+      "deadline": null,
+      "url": "https://www.academicwork.ca/jobs/psychology-1-year-limited-term-appointment-community-developmental-or-personality-wilfrid-laurier-university",
+      "apply_url": "https://www.academicwork.ca/jobs/psychology-1-year-limited-term-appointment-community-developmental-or-personality-wilfrid-laurier-university",
+      "match": "partial",
+      "source": "CAUT Academic Work",
+      "date_posted": ""
+    },
+    {
       "title": "Assistant Professor - Health Sciences 2-year Limited Term (Paramedicine)",
       "institution": "",
       "location": "Canada",
@@ -26,6 +38,18 @@
       "deadline": null,
       "url": "https://www.academicwork.ca/jobs/assistant-professor-health-sciences-2-year-limited-term-paramedicine-wilfrid-laurier-university",
       "apply_url": "https://www.academicwork.ca/jobs/assistant-professor-health-sciences-2-year-limited-term-paramedicine-wilfrid-laurier-university",
+      "match": "partial",
+      "source": "CAUT Academic Work",
+      "date_posted": ""
+    },
+    {
+      "title": "Psychology - 1-year Limited Term Appointment (Community, Developmental or Personality)",
+      "institution": "",
+      "location": "Canada",
+      "province": "Unknown",
+      "deadline": null,
+      "url": "https://www.travailacademique.ca/jobs/psychology-1-year-limited-term-appointment-community-developmental-or-personality-wilfrid-laurier-university",
+      "apply_url": "https://www.travailacademique.ca/jobs/psychology-1-year-limited-term-appointment-community-developmental-or-personality-wilfrid-laurier-university",
       "match": "partial",
       "source": "CAUT Academic Work",
       "date_posted": ""
