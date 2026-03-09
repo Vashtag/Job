@@ -1,7 +1,7 @@
 {
-  "last_updated": "2026-03-08T23:25:46.355660+00:00",
+  "last_updated": "2026-03-09T11:34:42.957556+00:00",
   "sources_checked": 13,
-  "sources_successful": 1,
+  "sources_successful": 0,
   "source_names": [
     "University Affairs",
     "CSBBCS",
@@ -17,30 +17,5 @@
     "University of Ottawa",
     "Brock University"
   ],
-  "jobs": [
-    {
-      "title": "Psychology - 1-year Limited Term Appointment (Community, Developmental or Personality)",
-      "institution": "",
-      "location": "Canada",
-      "province": "Unknown",
-      "deadline": null,
-      "url": "https://www.academicwork.ca/jobs/psychology-1-year-limited-term-appointment-community-developmental-or-personality-wilfrid-laurier-university",
-      "apply_url": "https://www.academicwork.ca/jobs/psychology-1-year-limited-term-appointment-community-developmental-or-personality-wilfrid-laurier-university",
-      "match": "partial",
-      "source": "CAUT Academic Work",
-      "date_posted": ""
-    },
-    {
-      "title": "Psychology - 1-year Limited Term Appointment (Community, Developmental or Personality)",
-      "institution": "",
-      "location": "Canada",
-      "province": "Unknown",
-      "deadline": null,
-      "url": "https://www.travailacademique.ca/jobs/psychology-1-year-limited-term-appointment-community-developmental-or-personality-wilfrid-laurier-university",
-      "apply_url": "https://www.travailacademique.ca/jobs/psychology-1-year-limited-term-appointment-community-developmental-or-personality-wilfrid-laurier-university",
-      "match": "partial",
-      "source": "CAUT Academic Work",
-      "date_posted": ""
-    }
-  ]
+  "jobs": []
 }
