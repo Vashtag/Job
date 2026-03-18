@@ -1,7 +1,7 @@
 {
-  "last_updated": "2026-03-17T23:33:59.638987+00:00",
+  "last_updated": "2026-03-18T11:45:02.858788+00:00",
   "sources_checked": 13,
-  "sources_successful": 2,
+  "sources_successful": 1,
   "source_names": [
     "University Affairs",
     "CSBBCS",
@@ -17,78 +17,5 @@
     "University of Ottawa",
     "Brock University"
   ],
-  "jobs": [
-    {
-      "title": "Assistant Professor - 2-year Limited Term (Kinesiology)",
-      "institution": "",
-      "location": "Canada",
-      "province": "Unknown",
-      "deadline": null,
-      "url": "https://www.academicwork.ca/jobs/assistant-professor-2-year-limited-term-kinesiology-wilfrid-laurier-university",
-      "apply_url": "https://www.academicwork.ca/jobs/assistant-professor-2-year-limited-term-kinesiology-wilfrid-laurier-university",
-      "match": "strong",
-      "source": "CAUT Academic Work",
-      "date_posted": ""
-    },
-    {
-      "title": "Assistant Professor - 2-year LTA Department of Kinesiology",
-      "institution": "",
-      "location": "Canada",
-      "province": "Unknown",
-      "deadline": null,
-      "url": "https://www.academicwork.ca/jobs/assistant-professor-2-year-lta-department-of-kinesiology-wilfrid-laurier-university",
-      "apply_url": "https://www.academicwork.ca/jobs/assistant-professor-2-year-lta-department-of-kinesiology-wilfrid-laurier-university",
-      "match": "strong",
-      "source": "CAUT Academic Work",
-      "date_posted": ""
-    },
-    {
-      "title": "Assistant Professor - Limited Term, Dept. of Kinesiology & Physical Education (Sport Management)",
-      "institution": "",
-      "location": "Canada",
-      "province": "Unknown",
-      "deadline": null,
-      "url": "https://www.academicwork.ca/jobs/assistant-professor-limited-term-dept-of-kinesiology-physical-education-sport-management-wilfrid-laurier-university",
-      "apply_url": "https://www.academicwork.ca/jobs/assistant-professor-limited-term-dept-of-kinesiology-physical-education-sport-management-wilfrid-laurier-university",
-      "match": "strong",
-      "source": "CAUT Academic Work",
-      "date_posted": ""
-    },
-    {
-      "title": "Assistant Professor - 2-year Limited Term (Kinesiology)",
-      "institution": "",
-      "location": "Canada",
-      "province": "Unknown",
-      "deadline": null,
-      "url": "https://www.travailacademique.ca/jobs/assistant-professor-2-year-limited-term-kinesiology-wilfrid-laurier-university",
-      "apply_url": "https://www.travailacademique.ca/jobs/assistant-professor-2-year-limited-term-kinesiology-wilfrid-laurier-university",
-      "match": "strong",
-      "source": "CAUT Academic Work",
-      "date_posted": ""
-    },
-    {
-      "title": "Assistant Professor - 2-year LTA Department of Kinesiology",
-      "institution": "",
-      "location": "Canada",
-      "province": "Unknown",
-      "deadline": null,
-      "url": "https://www.travailacademique.ca/jobs/assistant-professor-2-year-lta-department-of-kinesiology-wilfrid-laurier-university",
-      "apply_url": "https://www.travailacademique.ca/jobs/assistant-professor-2-year-lta-department-of-kinesiology-wilfrid-laurier-university",
-      "match": "strong",
-      "source": "CAUT Academic Work",
-      "date_posted": ""
-    },
-    {
-      "title": "Assistant Professor - Limited Term, Dept. of Kinesiology & Physical Education (Sport Management)",
-      "institution": "",
-      "location": "Canada",
-      "province": "Unknown",
-      "deadline": null,
-      "url": "https://www.travailacademique.ca/jobs/assistant-professor-limited-term-dept-of-kinesiology-physical-education-sport-management-wilfrid-laurier-university",
-      "apply_url": "https://www.travailacademique.ca/jobs/assistant-professor-limited-term-dept-of-kinesiology-physical-education-sport-management-wilfrid-laurier-university",
-      "match": "strong",
-      "source": "CAUT Academic Work",
-      "date_posted": ""
-    }
-  ]
+  "jobs": []
 }
