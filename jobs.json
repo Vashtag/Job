@@ -1,7 +1,7 @@
 {
-  "last_updated": "2026-03-24T23:33:37.693473+00:00",
+  "last_updated": "2026-03-25T11:41:22.064354+00:00",
   "sources_checked": 13,
-  "sources_successful": 0,
+  "sources_successful": 1,
   "source_names": [
     "University Affairs",
     "CSBBCS",
@@ -17,5 +17,30 @@
     "University of Ottawa",
     "Brock University"
   ],
-  "jobs": []
+  "jobs": [
+    {
+      "title": "Assistant Professor (Teaching), Cognitive Psychology",
+      "institution": "",
+      "location": "Canada",
+      "province": "Unknown",
+      "deadline": null,
+      "url": "https://www.academicwork.ca/jobs/assistant-professor-teaching-cognitive-psychology-university-of-calgary",
+      "apply_url": "https://www.academicwork.ca/jobs/assistant-professor-teaching-cognitive-psychology-university-of-calgary",
+      "match": "partial",
+      "source": "CAUT Academic Work",
+      "date_posted": ""
+    },
+    {
+      "title": "Assistant Professor (Teaching), Cognitive Psychology",
+      "institution": "",
+      "location": "Canada",
+      "province": "Unknown",
+      "deadline": null,
+      "url": "https://www.travailacademique.ca/jobs/assistant-professor-teaching-cognitive-psychology-university-of-calgary",
+      "apply_url": "https://www.travailacademique.ca/jobs/assistant-professor-teaching-cognitive-psychology-university-of-calgary",
+      "match": "partial",
+      "source": "CAUT Academic Work",
+      "date_posted": ""
+    }
+  ]
 }
