@@ -1,5 +1,5 @@
 {
-  "last_updated": "2026-03-29T23:34:15.713210+00:00",
+  "last_updated": "2026-03-30T11:55:26.017937+00:00",
   "sources_checked": 13,
   "sources_successful": 1,
   "source_names": [
@@ -19,50 +19,26 @@
   ],
   "jobs": [
     {
-      "title": "Instructor, Biochemistry & Molecular Biology (Limited Term)",
+      "title": "Term Instructor and Head Athletic Therapist, Department of Kinesiology and Applied Health",
       "institution": "",
       "location": "Canada",
       "province": "Unknown",
       "deadline": null,
-      "url": "https://www.academicwork.ca/jobs/instructor-biochemistry-molecular-biology-limited-term-dalhousie-university",
-      "apply_url": "https://www.academicwork.ca/jobs/instructor-biochemistry-molecular-biology-limited-term-dalhousie-university",
-      "match": "partial",
+      "url": "https://www.academicwork.ca/jobs/term-instructor-and-head-athletic-therapist-department-of-kinesiology-and-applied-health-university-of-winnipeg",
+      "apply_url": "https://www.academicwork.ca/jobs/term-instructor-and-head-athletic-therapist-department-of-kinesiology-and-applied-health-university-of-winnipeg",
+      "match": "strong",
       "source": "CAUT Academic Work",
       "date_posted": ""
     },
     {
-      "title": "Assistant Professor (Teaching), Cognitive Psychology",
+      "title": "Term Instructor and Head Athletic Therapist, Department of Kinesiology and Applied Health",
       "institution": "",
       "location": "Canada",
       "province": "Unknown",
       "deadline": null,
-      "url": "https://www.academicwork.ca/jobs/assistant-professor-teaching-cognitive-psychology-university-of-calgary",
-      "apply_url": "https://www.academicwork.ca/jobs/assistant-professor-teaching-cognitive-psychology-university-of-calgary",
-      "match": "partial",
-      "source": "CAUT Academic Work",
-      "date_posted": ""
-    },
-    {
-      "title": "Instructor, Biochemistry & Molecular Biology (Limited Term)",
-      "institution": "",
-      "location": "Canada",
-      "province": "Unknown",
-      "deadline": null,
-      "url": "https://www.travailacademique.ca/jobs/instructor-biochemistry-molecular-biology-limited-term-dalhousie-university",
-      "apply_url": "https://www.travailacademique.ca/jobs/instructor-biochemistry-molecular-biology-limited-term-dalhousie-university",
-      "match": "partial",
-      "source": "CAUT Academic Work",
-      "date_posted": ""
-    },
-    {
-      "title": "Assistant Professor (Teaching), Cognitive Psychology",
-      "institution": "",
-      "location": "Canada",
-      "province": "Unknown",
-      "deadline": null,
-      "url": "https://www.travailacademique.ca/jobs/assistant-professor-teaching-cognitive-psychology-university-of-calgary",
-      "apply_url": "https://www.travailacademique.ca/jobs/assistant-professor-teaching-cognitive-psychology-university-of-calgary",
-      "match": "partial",
+      "url": "https://www.travailacademique.ca/jobs/term-instructor-and-head-athletic-therapist-department-of-kinesiology-and-applied-health-university-of-winnipeg",
+      "apply_url": "https://www.travailacademique.ca/jobs/term-instructor-and-head-athletic-therapist-department-of-kinesiology-and-applied-health-university-of-winnipeg",
+      "match": "strong",
       "source": "CAUT Academic Work",
       "date_posted": ""
     }
