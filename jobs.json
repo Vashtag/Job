@@ -1,5 +1,5 @@
 {
-  "last_updated": "2026-03-30T11:55:26.017937+00:00",
+  "last_updated": "2026-03-30T23:36:26.794030+00:00",
   "sources_checked": 13,
   "sources_successful": 1,
   "source_names": [
@@ -39,6 +39,54 @@
       "url": "https://www.travailacademique.ca/jobs/term-instructor-and-head-athletic-therapist-department-of-kinesiology-and-applied-health-university-of-winnipeg",
       "apply_url": "https://www.travailacademique.ca/jobs/term-instructor-and-head-athletic-therapist-department-of-kinesiology-and-applied-health-university-of-winnipeg",
       "match": "strong",
+      "source": "CAUT Academic Work",
+      "date_posted": ""
+    },
+    {
+      "title": "Limited Term Faculty (LTF) Position in Biology",
+      "institution": "",
+      "location": "Canada",
+      "province": "Unknown",
+      "deadline": "August 1, 2026",
+      "url": "https://www.academicwork.ca/jobs/limited-term-faculty-ltf-position-in-biology-toronto-metropolitan-university-2",
+      "apply_url": "https://www.academicwork.ca/jobs/limited-term-faculty-ltf-position-in-biology-toronto-metropolitan-university-2",
+      "match": "partial",
+      "source": "CAUT Academic Work",
+      "date_posted": ""
+    },
+    {
+      "title": "Limited Term Faculty (LTF) Position in Biology",
+      "institution": "",
+      "location": "Canada",
+      "province": "Unknown",
+      "deadline": "August 1, 2026",
+      "url": "https://www.academicwork.ca/jobs/limited-term-faculty-ltf-position-in-biology-toronto-metropolitan-university-1",
+      "apply_url": "https://www.academicwork.ca/jobs/limited-term-faculty-ltf-position-in-biology-toronto-metropolitan-university-1",
+      "match": "partial",
+      "source": "CAUT Academic Work",
+      "date_posted": ""
+    },
+    {
+      "title": "Limited Term Faculty (LTF) Position in Biology",
+      "institution": "",
+      "location": "Canada",
+      "province": "Unknown",
+      "deadline": "August 1, 2026",
+      "url": "https://www.travailacademique.ca/jobs/limited-term-faculty-ltf-position-in-biology-toronto-metropolitan-university-2",
+      "apply_url": "https://www.travailacademique.ca/jobs/limited-term-faculty-ltf-position-in-biology-toronto-metropolitan-university-2",
+      "match": "partial",
+      "source": "CAUT Academic Work",
+      "date_posted": ""
+    },
+    {
+      "title": "Limited Term Faculty (LTF) Position in Biology",
+      "institution": "",
+      "location": "Canada",
+      "province": "Unknown",
+      "deadline": "August 1, 2026",
+      "url": "https://www.travailacademique.ca/jobs/limited-term-faculty-ltf-position-in-biology-toronto-metropolitan-university-1",
+      "apply_url": "https://www.travailacademique.ca/jobs/limited-term-faculty-ltf-position-in-biology-toronto-metropolitan-university-1",
+      "match": "partial",
       "source": "CAUT Academic Work",
       "date_posted": ""
     }
