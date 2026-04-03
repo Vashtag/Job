@@ -1,7 +1,7 @@
 {
-  "last_updated": "2026-04-02T23:35:59.830551+00:00",
+  "last_updated": "2026-04-03T11:37:21.651650+00:00",
   "sources_checked": 13,
-  "sources_successful": 1,
+  "sources_successful": 0,
   "source_names": [
     "University Affairs",
     "CSBBCS",
@@ -17,30 +17,5 @@
     "University of Ottawa",
     "Brock University"
   ],
-  "jobs": [
-    {
-      "title": "Lecturer or Assistant Professor, Exercise and Movement Science - HS-295",
-      "institution": "",
-      "location": "Canada",
-      "province": "Unknown",
-      "deadline": "July 1, 2026",
-      "url": "https://www.academicwork.ca/jobs/lecturer-or-assistant-professor-exercise-and-movement-science-hs-295-western-university",
-      "apply_url": "https://www.academicwork.ca/jobs/lecturer-or-assistant-professor-exercise-and-movement-science-hs-295-western-university",
-      "match": "partial",
-      "source": "CAUT Academic Work",
-      "date_posted": ""
-    },
-    {
-      "title": "Lecturer or Assistant Professor, Exercise and Movement Science - HS-295",
-      "institution": "",
-      "location": "Canada",
-      "province": "Unknown",
-      "deadline": "July 1, 2026",
-      "url": "https://www.travailacademique.ca/jobs/lecturer-or-assistant-professor-exercise-and-movement-science-hs-295-western-university",
-      "apply_url": "https://www.travailacademique.ca/jobs/lecturer-or-assistant-professor-exercise-and-movement-science-hs-295-western-university",
-      "match": "partial",
-      "source": "CAUT Academic Work",
-      "date_posted": ""
-    }
-  ]
+  "jobs": []
 }
