@@ -1,7 +1,7 @@
 {
-  "last_updated": "2026-04-07T23:37:38.117405+00:00",
+  "last_updated": "2026-04-08T11:54:15.796957+00:00",
   "sources_checked": 13,
-  "sources_successful": 0,
+  "sources_successful": 1,
   "source_names": [
     "University Affairs",
     "CSBBCS",
@@ -17,5 +17,30 @@
     "University of Ottawa",
     "Brock University"
   ],
-  "jobs": []
+  "jobs": [
+    {
+      "title": "Assistant Professor, Department of Statistics (Position #37427)",
+      "institution": "",
+      "location": "Canada",
+      "province": "Unknown",
+      "deadline": "September 1, 2026",
+      "url": "https://www.academicwork.ca/jobs/assistant-professor-department-of-statistics-position-37427-university-of-manitoba",
+      "apply_url": "https://www.academicwork.ca/jobs/assistant-professor-department-of-statistics-position-37427-university-of-manitoba",
+      "match": "partial",
+      "source": "CAUT Academic Work",
+      "date_posted": ""
+    },
+    {
+      "title": "Assistant Professor, Department of Statistics (Position #37427)",
+      "institution": "",
+      "location": "Canada",
+      "province": "Unknown",
+      "deadline": "September 1, 2026",
+      "url": "https://www.travailacademique.ca/jobs/assistant-professor-department-of-statistics-position-37427-university-of-manitoba",
+      "apply_url": "https://www.travailacademique.ca/jobs/assistant-professor-department-of-statistics-position-37427-university-of-manitoba",
+      "match": "partial",
+      "source": "CAUT Academic Work",
+      "date_posted": ""
+    }
+  ]
 }
