@@ -1,5 +1,5 @@
 {
-  "last_updated": "2026-04-13T23:42:45.732128+00:00",
+  "last_updated": "2026-04-14T11:57:01.117868+00:00",
   "sources_checked": 13,
   "sources_successful": 1,
   "source_names": [
@@ -38,6 +38,30 @@
       "deadline": null,
       "url": "https://www.travailacademique.ca/jobs/assistant-associate-professor-division-of-pediatric-cardiology-section-of-electrophysiology-university-of-alberta",
       "apply_url": "https://www.travailacademique.ca/jobs/assistant-associate-professor-division-of-pediatric-cardiology-section-of-electrophysiology-university-of-alberta",
+      "match": "partial",
+      "source": "CAUT Academic Work",
+      "date_posted": ""
+    },
+    {
+      "title": "Assistant Professor, Teaching Stream – Foundations of Psychology",
+      "institution": "",
+      "location": "Canada",
+      "province": "Unknown",
+      "deadline": "September 1, 2026",
+      "url": "https://www.academicwork.ca/jobs/assistant-professor-teaching-stream-foundations-of-psychology-university-of-toronto",
+      "apply_url": "http://uoft.me/how-to-apply",
+      "match": "partial",
+      "source": "CAUT Academic Work",
+      "date_posted": ""
+    },
+    {
+      "title": "Assistant Professor, Teaching Stream – Foundations of Psychology",
+      "institution": "",
+      "location": "Canada",
+      "province": "Unknown",
+      "deadline": "September 1, 2026",
+      "url": "https://www.travailacademique.ca/jobs/assistant-professor-teaching-stream-foundations-of-psychology-university-of-toronto",
+      "apply_url": "http://uoft.me/how-to-apply",
       "match": "partial",
       "source": "CAUT Academic Work",
       "date_posted": ""
