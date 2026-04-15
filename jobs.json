@@ -1,5 +1,5 @@
 {
-  "last_updated": "2026-04-14T23:42:49.878540+00:00",
+  "last_updated": "2026-04-15T11:55:50.231607+00:00",
   "sources_checked": 13,
   "sources_successful": 1,
   "source_names": [
@@ -38,6 +38,30 @@
       "deadline": null,
       "url": "https://www.travailacademique.ca/jobs/assistant-associate-professor-division-of-pediatric-cardiology-section-of-electrophysiology-university-of-alberta",
       "apply_url": "https://www.travailacademique.ca/jobs/assistant-associate-professor-division-of-pediatric-cardiology-section-of-electrophysiology-university-of-alberta",
+      "match": "partial",
+      "source": "CAUT Academic Work",
+      "date_posted": ""
+    },
+    {
+      "title": "Canada Impact+ Emerging Leader in Human Cardiovascular Physiology (Assistant Professor)",
+      "institution": "",
+      "location": "Canada",
+      "province": "Unknown",
+      "deadline": "May 13, 2026",
+      "url": "https://www.academicwork.ca/jobs/canada-impact-emerging-leader-in-human-cardiovascular-physiology-assistant-professor-brock-university",
+      "apply_url": "https://www.academicwork.ca/jobs/canada-impact-emerging-leader-in-human-cardiovascular-physiology-assistant-professor-brock-university",
+      "match": "partial",
+      "source": "CAUT Academic Work",
+      "date_posted": ""
+    },
+    {
+      "title": "Canada Impact+ Emerging Leader in Human Cardiovascular Physiology (Assistant Professor)",
+      "institution": "",
+      "location": "Canada",
+      "province": "Unknown",
+      "deadline": "May 13, 2026",
+      "url": "https://www.travailacademique.ca/jobs/canada-impact-emerging-leader-in-human-cardiovascular-physiology-assistant-professor-brock-university",
+      "apply_url": "https://www.travailacademique.ca/jobs/canada-impact-emerging-leader-in-human-cardiovascular-physiology-assistant-professor-brock-university",
       "match": "partial",
       "source": "CAUT Academic Work",
       "date_posted": ""
