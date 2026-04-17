@@ -1,7 +1,7 @@
 {
-  "last_updated": "2026-04-16T23:41:23.865291+00:00",
+  "last_updated": "2026-04-17T11:51:13.848577+00:00",
   "sources_checked": 13,
-  "sources_successful": 1,
+  "sources_successful": 0,
   "source_names": [
     "University Affairs",
     "CSBBCS",
@@ -17,30 +17,5 @@
     "University of Ottawa",
     "Brock University"
   ],
-  "jobs": [
-    {
-      "title": "Canada Impact+ Emerging Leader in Human Cardiovascular Physiology (Assistant Professor)",
-      "institution": "",
-      "location": "Canada",
-      "province": "Unknown",
-      "deadline": "May 13, 2026",
-      "url": "https://www.academicwork.ca/jobs/canada-impact-emerging-leader-in-human-cardiovascular-physiology-assistant-professor-brock-university",
-      "apply_url": "https://www.academicwork.ca/jobs/canada-impact-emerging-leader-in-human-cardiovascular-physiology-assistant-professor-brock-university",
-      "match": "partial",
-      "source": "CAUT Academic Work",
-      "date_posted": ""
-    },
-    {
-      "title": "Canada Impact+ Emerging Leader in Human Cardiovascular Physiology (Assistant Professor)",
-      "institution": "",
-      "location": "Canada",
-      "province": "Unknown",
-      "deadline": "May 13, 2026",
-      "url": "https://www.travailacademique.ca/jobs/canada-impact-emerging-leader-in-human-cardiovascular-physiology-assistant-professor-brock-university",
-      "apply_url": "https://www.travailacademique.ca/jobs/canada-impact-emerging-leader-in-human-cardiovascular-physiology-assistant-professor-brock-university",
-      "match": "partial",
-      "source": "CAUT Academic Work",
-      "date_posted": ""
-    }
-  ]
+  "jobs": []
 }
